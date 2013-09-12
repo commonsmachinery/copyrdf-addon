@@ -6,6 +6,10 @@
 //
 // Distributed under an GPLv2 license, please see LICENSE in the top dir.
 
+//
+// TODO: move this into a separate project with docs and unit tests
+//
+
 
 if (typeof rdfxml == "undefined") {
 
@@ -17,12 +21,42 @@ var rdfxml = (function() {
     // Public API
     //
     
-    // Convert an RDFa Subject object into an RDF graph
+    // Extract all RDF/XML for a given subject from the document, or null
+    // if there is no information about the subject.
+    // If deep is true, then all referenced subjects will also be included
     
-    api.fromSubject = function(subject, domImpl) {
+    api.fromSubject = function(doc, subjectURI, deep) {
 
-	var rdf = new RDFDoc(domImpl);
+	var subject = doc.data.getSubject(subjectURI);
+
+	if (subject == null)
+	    return null;
+
+	var rdf = new RDFDoc(doc);
 	rdf.addSubject(subject);
+
+	// Add in all subject refs if a deep extraction is requested, and all blank nodes.
+	// Recurse until done.
+	
+	while (rdf.blankRefs.length > 0
+	       || (deep && rdf.resourceRefs.length > 0)) {
+
+	    if (rdf.blankRefs.length > 0) {
+		var refURI = rdf.blankRefs.pop();
+		var refSubject = doc.data.getSubject(refURI);
+		
+		if (refSubject != null)
+		    rdf.addSubject(refSubject);
+	    }
+
+	    if (deep && rdf.resourceRefs.length > 0) {
+		var refURI = rdf.resourceRefs.pop();
+		var refSubject = doc.data.getSubject(refURI);
+		
+		if (refSubject != null)
+		    rdf.addSubject(refSubject);
+	    }
+	}
 
 	return rdf.toString();
     };
@@ -34,43 +68,72 @@ var rdfxml = (function() {
 
     const RDF_NS_URI = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
 
-    function RDFDoc(domImpl) {
-	if (domImpl == null)
-	    domImpl = document.implementation;
+    function RDFDoc(srcDoc) {
 	
 	this.namespaces = {};
 	this.nsCounter = 0;
 	
-	this.doc = domImpl.createDocument(RDF_NS_URI, this.getRDFTagName('RDF'), null);
+	this.addedSubjects = {};
+	this.blankRefs = [];
+	this.resourceRefs = [];
+	
+	this.doc = srcDoc.implementation.createDocument(RDF_NS_URI, this.getRDFTagName('RDF'), null);
 	this.rdf = this.doc.documentElement;
+	this.newline(this.rdf);
     }
 
     RDFDoc.prototype.toString = function() {
-	return '<?xml version="1.0" encoding="utf-8"?>\n'
+	// Since we don't know what encoding this will end up as, add
+	// a byte-order mark at the start instead of using the
+	// encoding attribute
+
+	return '\uFEFF<?xml version="1.0"?>\n'
 	    + new XMLSerializer().serializeToString(this.doc);
     };
 
     RDFDoc.prototype.addSubject = function(subject) {
-	// TODO: check if subject has already been added, skip if so
+	// Only add subjects once
 
+	if (subject.id in this.addedSubjects)
+	    return;
+
+	this.addedSubjects[subject.id] = true;
+
+	// Create XML
 	var desc = this.doc.createElementNS(
 	    RDF_NS_URI, this.getRDFTagName('Description'));
 
-	desc.setAttributeNS(RDF_NS_URI, this.getRDFTagName('about'), subject.id);
+	if (subject.id.substring(0, 2) == "_:") {
+	    desc.setAttributeNS(RDF_NS_URI, this.getRDFTagName('nodeID'), subject.id.slice(2));
+	}
+	else {
+	    desc.setAttributeNS(RDF_NS_URI, this.getRDFTagName('about'), subject.id);
+	}
+
+	this.newline(desc);
 
 	for (var predicate in subject.predicates)
 	{
 	    var ns = this.splitURI(predicate);
 
-	    var objects = subject.predicates[predicate].objects;
+	    if (ns) {
+		var objects = subject.predicates[predicate].objects;
 
-	    for (var i in objects)
-	    {
-		this.addPredicate(desc, ns.namespace, ns.qname, objects[i]);
+		for (var i in objects)
+		{
+		    this.addPredicate(desc, ns.namespace, ns.qname, objects[i]);
+		}
+	    }
+	    else {
+		console.log("weird predicate: " + predicate);
 	    }
 	}
 
+	this.indent(desc, 2);
+
+	this.indent(this.rdf, 2);
 	this.rdf.appendChild(desc);
+	this.newline(this.rdf);
     };
 
     RDFDoc.prototype.addPredicate = function(parent, namespace, qname, object) {
@@ -78,20 +141,23 @@ var rdfxml = (function() {
 	var pred = this.doc.createElementNS(namespace, qname);
 
 	if (object.type == "http://www.w3.org/1999/02/22-rdf-syntax-ns#object") {
-	    // Is this an internal RDFa.js value?
+	    // Is that URI an internal RDFa.js thing, or part of the RDFa API?
+
 	    if (object.value.substring(0, 2) == "_:") {
 		pred.setAttributeNS(RDF_NS_URI, this.getRDFTagName('nodeID'),
-				    object.value.splice(2));
+				    object.value.slice(2));
 
-		// TODO: ensure that referenced blank nodes are added
+		this.blankRefs.push(object.value);
 	    }
 	    else {
 		pred.setAttributeNS(RDF_NS_URI, this.getRDFTagName('resource'),
 				    object.value);
+
+		this.resourceRefs.push(object.value);
 	    }
 	}
 	else if (object.type == "http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral") {
-	    // TODO
+	    // TODO (but does anyone actually use XML literals?)
 	}
 	else {
 	    var text = this.doc.createTextNode(object.value);
@@ -108,7 +174,9 @@ var rdfxml = (function() {
 	    }
 	}
 
+	this.indent(parent, 4);
 	parent.appendChild(pred);
+	this.newline(parent);
     };
     
 
@@ -155,7 +223,17 @@ var rdfxml = (function() {
 	};
     };
 
+    // Do some basic pretty-printing, since XMLSerializer doesn't do that for us
+    RDFDoc.prototype.indent = function(node, depth) {
+	node.appendChild(
+	    this.doc.createTextNode('        '.substr(0, depth)));
+    };
 
+    RDFDoc.prototype.newline = function(node) {
+	node.appendChild(this.doc.createTextNode('\n'));
+    };
+    
+	
     // Common URI namespace prefixes (inverse of the list in RDFa.js)
 
     var ns_prefixes = {};

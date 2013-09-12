@@ -1,4 +1,4 @@
-// menu_item_copy_image.js - content script for menu item "Copy image with metadata"
+// menu_item_copy_rdfxml.js - content script for menu item "Copy metadata"
 //
 // Copyright 2013 Commons Machinery http://commonsmachinery.se/
 //
@@ -14,20 +14,12 @@ self.on("click", function (node, data) {
     }
 
     // Get all RDFa embedded triples for this image
-    var rdf = rdfxml.fromSubject(document, node.src, true);
+    var rdf = rdfxml.fromSubject(document, node.src, data == 'deep');
 
     if (rdf) {
-	// It's not possible to pass the DOM element node through
-	// postMessage since it's destroyed by the JSON serialisation.
-	// Hack around that by tagging it with a magic ID and passing that 
-	// to the main code, which can then find it in the document.
-	
-	var id = uuid.v1();
-	node.setAttribute(data, id);
-
-	self.postMessage({ 'id': id, 'rdf': rdf });
+	self.postMessage({ 'rdf': rdf });
     }
     else {
 	alert("Could not extract RDF/XML metadata");
-    }	
+    }
 });
