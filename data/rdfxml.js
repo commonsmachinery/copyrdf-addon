@@ -24,16 +24,43 @@ var rdfxml = (function() {
     // Extract all RDF/XML for a given subject from the document, or null
     // if there is no information about the subject.
     // If deep is true, then all referenced subjects will also be included
+
+    // Subject can be:
+    //
+    // * A string, in which case that URI is copied
+    // * An object with parameters srcURI (to be copied) and destURI
+    //   (the URI to be used as rdf:about)
+    // * A list of subjects to copy (TODO)
     
-    api.fromSubject = function(doc, subjectURI, deep) {
+    api.fromSubject = function(doc, subject, deep) {
+	var srcURI = null;
+	var destURI = null;
+	
+	if (typeof subject === 'string') {
+	    srcURI = subject;
+	}
+	else {
+	    srcURI = subject.srcURI;
+	    destURI = subject.destURI;
+	}
 
-	var subject = doc.data.getSubject(subjectURI);
+	var subjectNode = doc.data.getSubject(srcURI);
 
-	if (subject == null)
+	if (subjectNode == null)
 	    return null;
 
 	var rdf = new RDFDoc(doc);
-	rdf.addSubject(subject);
+
+	// Temporarily rename this node if requested
+	var oldId = subjectNode.id;
+	if (destURI != null)
+	    subjectNode.id = destURI;
+
+	rdf.addSubject(subjectNode);
+
+	// Restore subject
+	if (destURI != null)
+	    subjectNode.id = oldId;
 
 	// Add in all subject refs if a deep extraction is requested, and all blank nodes.
 	// Recurse until done.

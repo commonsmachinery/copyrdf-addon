@@ -13,8 +13,10 @@ self.on("click", function (node, data) {
 	GreenTurtle.attach(document);
     }
 
-    // Get all RDFa embedded triples for this image
-    var rdf = rdfxml.fromSubject(document, node.src, true);
+    // Get all RDFa embedded triples for this image Rewrite URI to
+    // make it easy for paster to find the right Description (i.e. the
+    // one with rdf:about="")
+    var rdf = rdfxml.fromSubject(document, { srcURI: node.src, destURI: '' }, true);
 
     if (rdf) {
 	// It's not possible to pass the DOM element node through
