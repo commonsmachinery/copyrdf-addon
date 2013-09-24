@@ -38,8 +38,8 @@ $(document).ready(function() {
    });
 });
 
-// Parse the RDF/XML using rdflib.js from Tabulator:
-// http://www.w3.org/2005/ajar/tab
+// Parse the RDF/XML using https://github.com/linkeddata/rdflib.js
+
 function parseRDFXML(str) {
     var dom = new DOMParser().parseFromString(str, 'application/xml');
 
