@@ -5,6 +5,6 @@
   "description": "Copy RDFa metadata to the clipboard when copying images",
   "author": "Peter Liljenberg, Commons Machinery (http://commonsmachinery.se/) [peter@commonsmachinery.se]",
   "license": "GPLv2",
-  "version": "0.1",
+  "version": "0.2",
   "permissions": { "private-browsing": true }
 }
