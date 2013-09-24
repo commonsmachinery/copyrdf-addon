@@ -17,6 +17,7 @@ self.on("context", function (node) {
     // For now, only support img tags. Assume the menu item have
     // already filtered for that.
 
-    return document.data.getSubject(node.src) != null;
+    return (node.src && document.data.getSubject(node.src) != null)
+	|| (node.id && document.data.getSubject('#' + node.id) != null);
 });
 

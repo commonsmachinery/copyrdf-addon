@@ -16,7 +16,13 @@ self.on("click", function (node, data) {
     // Get all RDFa embedded triples for this image Rewrite URI to
     // make it easy for paster to find the right Description (i.e. the
     // one with rdf:about="")
+
+    // Try image URI first
     var rdf = rdfxml.fromSubject(document, { srcURI: node.src, destURI: '' }, true);
+
+    // And fall back on any ID
+    if (rdf == null && node.id)
+	rdf = rdfxml.fromSubject(document, { srcURI: '#' + node.id, destURI: '' }, true);
 
     if (rdf) {
 	// It's not possible to pass the DOM element node through

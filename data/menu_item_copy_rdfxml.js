@@ -14,7 +14,13 @@ self.on("click", function (node, data) {
     }
 
     // Get all RDFa embedded triples for this image
+
+    // Try image URI first
     var rdf = rdfxml.fromSubject(document, node.src, data == 'deep');
+
+    // Otherwise fall back on any ID
+    if (rdf == null && node.id)
+	rdf = rdfxml.fromSubject(document, '#' + node.id, data == 'deep');
 
     if (rdf) {
 	self.postMessage({ 'rdf': rdf });
