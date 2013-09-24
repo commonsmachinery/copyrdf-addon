@@ -128,7 +128,7 @@ function createAttribution(kb, srcURI, targetURI) {
     if (sources.length > 0) {
 	div.appendChild(createSpan(' Sources: '));
 	for (var i in sources) {
-	    div.appendChild(createA(sources[i], sources[i], 'http://purl.org/dc/elements/1.1/', null));
+	    div.appendChild(createA(sources[i], sources[i], 'http://purl.org/dc/elements/1.1/source', null));
 	    div.appendChild(createSpan(' '));
 	}
     }
