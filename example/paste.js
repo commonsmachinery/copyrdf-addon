@@ -38,7 +38,7 @@ $(document).ready(function() {
    });
 });
 
-// Parse the RDF/XML using rdflib.js from Tabulator
+// Parse the RDF/XML using rdflib.js from Tabulator:
 // http://www.w3.org/2005/ajar/tab
 function parseRDFXML(str) {
     var dom = new DOMParser().parseFromString(str, 'application/xml');
@@ -60,8 +60,8 @@ function createAttribution(kb, srcURI, targetURI) {
 
     var root = kb.sym(srcURI);
 
-    // Could go look for different titles and choose one based on language,
-    // and also look for dcterms:title.
+    // Could go look for different titles in an rdf:Alt node and
+    // choose one based on language, and also look for dcterms:title.
     var title = kb.any(root, DC('title'));
 
     var attributionURL = kb.any(root, CC('attributionURL'));
@@ -84,7 +84,11 @@ function createAttribution(kb, srcURI, targetURI) {
     if (license != null)
 	license = license.uri;
 
-    // TODO: get sources
+    var sources = kb.each(root, DC('source'));
+
+    for (var i in sources) {
+	sources[i] = sources[i].uri;
+    }
 
     // Build attribution
 
@@ -109,10 +113,24 @@ function createAttribution(kb, srcURI, targetURI) {
 				       'http://creativecommons.org/ns#attributionName'));
 	}
     }
+    else {
+	div.appendChild(createSpan(' has no attribution and'));
+    }
 
     if (license) {
 	div.appendChild(createSpan(' is licensed with '));
 	div.appendChild(createA(license, license, 'license', null));
+    }
+    else {
+	div.appendChild(createSpan(' has no license information.'));
+    }
+
+    if (sources.length > 0) {
+	div.appendChild(createSpan(' Sources: '));
+	for (var i in sources) {
+	    div.appendChild(createA(sources[i], sources[i], 'http://purl.org/dc/elements/1.1/', null));
+	    div.appendChild(createSpan(' '));
+	}
     }
 
     return div;
