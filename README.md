@@ -72,26 +72,14 @@ RDF/XML.
 
 ### Building the add-on yourself
 
-If you build the add-on with the stock SDK, the "Paste image" menu item
-will always be available in editor areas even when there is no image
-on the clipboard.  To enable the context setting that only shows it
-when there's something to paste, patch the SDK to export the Context
-base class:
+If you build the add-on with the current stock SDK, the "Paste image"
+menu item will always be available in editor areas even when there is
+no image on the clipboard.  The SDK is being patched to add support to
+the add-on to only show this item when there is an image on the
+clipboard.
 
-```
---- lib/sdk/context-menu.js~	2013-03-25 16:00:00.000000000 +0100
-+++ lib/sdk/context-menu.js	2013-09-23 16:54:47.850087432 +0200
-@@ -96,6 +96,9 @@
-   }
- });
- 
-+// PATCH: why not let addons implement their own context classes?
-+exports.Context = Context;
-+
- // Matches when the context-clicked node doesn't have any of
- // NON_PAGE_CONTEXT_ELTS in its ancestors
- let PageContext = Class({
-```
+In the meantime, you can try this by cloning this SDK tree:
+https://github.com/commonsmachinery/addon-sdk/tree/922558
 
 Then run cfx with `--force-use-bundled-sdk`.
 
