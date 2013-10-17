@@ -8,16 +8,5 @@
 
 
 self.on("context", function (node) {
-    // Make sure we have the RDFa API on the page
-    if (typeof document.data == 'undefined') {
-	console.log('attaching RDFa API');
-	GreenTurtle.attach(document);
-    }
-
-    // For now, only support img tags. Assume the menu item have
-    // already filtered for that.
-
-    return (node.src && document.data.getSubject(node.src) != null)
-	|| (node.id && document.data.getSubject('#' + node.id) != null);
+    return findImageSubject(node) != null;
 });
-

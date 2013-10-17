@@ -7,25 +7,14 @@
 // Distributed under an GPLv2 license, please see LICENSE in the top dir.
 
 self.on("click", function (node, data) {
-    // Make sure we have the RDFa API on the page
-    if (typeof document.data == 'undefined') {
-	console.log('attaching RDFa API');
-	GreenTurtle.attach(document);
-    }
+    var rdfDoc;
+    var subject = findImageSubject(node);
 
-    // Get all RDFa embedded triples for this image
-
-    // Try image URI first
-    var rdf = rdfxml.fromSubject(document, node.src, data == 'deep');
-
-    // Otherwise fall back on any ID
-    if (rdf == null && node.id)
-	rdf = rdfxml.fromSubject(document, '#' + node.id, data == 'deep');
-
-    if (rdf) {
-	self.postMessage({ 'rdf': rdf });
-    }
-    else {
+    if (!subject) {
 	alert("Could not extract RDF/XML metadata");
-    }
+	return;
+    }	
+
+    rdfDoc = rdfxml.fromSubject(document, subject, data === 'deep');
+    self.postMessage({ 'rdf': rdfxml.serializeDocument(rdfDoc) });
 });
