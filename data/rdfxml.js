@@ -18,14 +18,21 @@ var rdfxml = (function() {
     //
     
     // Returns a RDF/XML DOM document node for a given GreenTurtle
-    // subject node.  If deep is true, then all referenced subjects
-    // will also be included
+    // subject node, or a list of subjects.  If deep is true, then all
+    // referenced subjects will also be included
     
     api.fromSubject = function(doc, subject, deep) {
-	var refURI, refSubject;
+	var i, refURI, refSubject;
 	var rdf = new RDFDoc(doc);
 
-	rdf.addSubject(subject);
+	if (Array.isArray(subject)) {
+	    for (i = 0; i < subject.length; i++) {
+		rdf.addSubject(subject[i]);
+	    }
+	}
+	else {
+	    rdf.addSubject(subject);
+	}
 
 	// Add in all subject refs if a deep extraction is requested, and all blank nodes.
 	// Recurse until done.

@@ -8,13 +8,23 @@
 
 self.on("click", function (node, data) {
     var rdfDoc;
-    var subject = findImageSubject(node);
+    var subject;
 
-    if (!subject) {
-	alert("Could not extract RDF/XML metadata");
-	return;
-    }	
+    if (data === 'image') {
+	subject = pageMetadata.findImageSubject(node);
+	if (!subject) {
+	    alert("Could not extract RDF/XML metadata");
+	    return;
+	}	
+    }
+    else {
+	subject = pageMetadata.getAllSubjects();
+	if (!subject || !subject.length) {
+	    alert("Could not extract RDF/XML metadata");
+	    return;
+	}	
+    }
 
-    rdfDoc = rdfxml.fromSubject(document, subject, data === 'deep');
+    rdfDoc = rdfxml.fromSubject(document, subject, true);
     self.postMessage({ 'rdf': rdfxml.serializeDocument(rdfDoc) });
 });
