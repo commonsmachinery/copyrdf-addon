@@ -6,37 +6,59 @@ be copied to the clipboard, and pasted into other applications.  It
 also includes a function for pasting images with metadata into
 supporting webpages.
 
+http://commonsmachinery.se/labs/ contain more information about
+plugins and applications that support pasting an image with metadata
+that has been copied by this add-on.
+
+
+Site support
+------------
+
+RDFa metadata is not very widespread, and when it it present it can
+often be difficult to know what resource on the page it describes.
+The technical details section below describes this further.
+
+The addon has been tested against these sites:
+
+* [Flickr](http://www.flickr.com/) (site-specific support in add-on)
+* [Europeana](http://www.europeana.eu/portal/) (standard RDFa)
+* [CC REL by example](http://labs.creativecommons.org/2011/ccrel-guide/) (standard RDFa)
+* [Commons Machinery labs: Mediagoblin](http://labs.commonsmachinery.se/mg/) (standard RDFa)
+
 
 Copy metadata and images
 ------------------------
 
-When an image has metadata, it's context menu now have three new
+When an image has metadata, it's context menu now has two new
 items:
 
-* Copy metadata
-* Copy linked metadata
+* Copy image metadata
 * Copy image with metadata
 
-The first two extract the metadata and puts is RDF/XML on the
-clipboard, and can then be pasted into a text editor.  The difference
-is that the first item just grabs the properties that are about the
-image itself, while the second item also include any metadata that is
-present for linked resources.
+The first item extract the metadata and puts is RDF/XML on the
+clipboard.  It can then be pasted into e.g. a text editor.
 
-You can try it out here:
-http://labs.creativecommons.org/2011/ccrel-guide/examples/image.html
+The second item puts both the image and the RDF/XML on the clipboard.
+An application that supports this format of data can paste both the
+image and the metadata into another document, and use the metadata to
+e.g. create an automatic credit line.
 
+An application that doesn't use the metadata will still be able to
+paste the image itself.
 
-The third item puts both the image and the RDF/XML on the clipboard
-(identified by their MIME types).  A tool that knows to look for
-application/rdf+xml can then grab the metadata together with the image
-pixels.  This is experimental work to test out ways of handling
-metadata, and may never become a standard.  This blog entry explains
-it in more detail:
-http://commonsmachinery.se/2013/09/copy-rdfa-metadata/
+The page context menu can also have two additional menu items:
+
+* Copy page metadata
+* Copy main image with metadata.
 
 
 ### Limitations
+
+On MacOSX, this addon only supports copying metadata within the same
+Firefox instance, e.g. to another tab.  The MacOSX clipboard makes it
+a bit more complicated to put custom data on the clipboard than what
+Linux/X and Windows does, and thus the clipboard code in Firefox for
+MacOSX does not support copying the metadata to the global clipboard.
 
 This add-on currently only supports <img> tags.  It could be extended
 to support <video> and <audio> too by improving the context script.
@@ -50,24 +72,28 @@ Paste images with metadata
 
 The add-on includes experimental support for pasting images with
 metadata into browser-based editors.  The context menu includes "Paste
-image" when clicked inside an editor area that supports this, and
-there is also an image on the clipboard (but see note below).
-
-To support pasting images with this function, the editor must add the
-HTML class `x-enable-paste-image` to the element that wraps the editor
-(typically a `div`).  When the image is pasted, an `x-onpaste-image`
-custom event is generated with these detail parameters:
-
-* `image`: image data in format `"data:MIMETYPE;base64,DATA..."`.
-   Create an `img` tag and set `src` to this string to show it in the
-   page.
-* `rdfxml`: serialised RDF/XML associated with the image, or null if
-   there was no metadata.
-* `target`: the target element for the paste action
+image" when clicked inside an editor area that supports this.  (With
+the current SDK, this option is enabled even when there isn't any
+image on the clipboard.  See note below.)
 
 There's a simple page implementing this in the `example` directory,
-using https://github.com/linkeddata/rdflib.js to process the incoming
-RDF/XML.
+and at http://commonsmachinery.se/labs/ you can find an Aloha Editor
+instance supporting this.
+
+### Limitations
+
+On MacOSX, this only works for metadata copied within the same browser
+instance.
+
+
+Installing
+==========
+
+The add-on can be installed from the Mozilla registry:
+https://addons.mozilla.org/en-US/firefox/addon/copy-rdfa-metadata/
+
+It is also uploaded to the repository here:
+https://github.com/commonsmachinery/copyrdf-addon/raw/master/copyrdf.xpi
 
 
 ### Building the add-on yourself
@@ -84,14 +110,114 @@ https://github.com/commonsmachinery/addon-sdk/tree/922558
 Then run cfx with `--force-use-bundled-sdk`.
 
 
-Installing
-==========
+Technical details
+=================
 
-The add-on can be installed from the Mozilla registry:
-https://addons.mozilla.org/en-US/firefox/addon/copy-rdfa-metadata/
+This is experimental code, looking at ways to use metadata and the
+clipboard.  This section documents more precisely how the add-on
+locates metadata, how it is copied, and how a browser-based editor can
+support pasting metadata.
 
-It is also uploaded to the repository here:
-https://github.com/commonsmachinery/copyrdf-addon/raw/master/copyrdf.xpi
+
+Locating metadata
+=================
+
+RDF metadata consists of triples, consisting of a subject, a
+predicate, and an object.  Finding the metadata for a given image
+means that we have to find all the triples whose subject is the image.
+
+Subjects are identified by a URI, which results in various ways to
+denote the image.  The add-on uses the following methods in this
+order:
+
+The best way is to mark the image with an ID attribute, and address
+the image with the URI of the page and the ID.  If it is the main
+image of a page, a good name can be ```#this```.  That will result in
+the URI for the subject will be
+```http://example.org/images/34327/#this```, which is likely a unique
+and long-term viable URL, which can be used to locate the source of
+the image and find the original RDFa metadata on the page.
+
+Secondarily, the image source URI can be the subject,
+e.g. ```http://example.org/resources/34327.jpg```.  This has the
+drawback that anyone looking up the image based on this URI will only
+find the image file itself, without the context of a web page where it
+might be published.  This also means that it might not be the image as
+a work that is found, but just a specific thumbnail or medium
+resolution file.
+
+A third way is to look for an ```og:image``` predicate, whose object
+is the image source.  Then the subject of that predicate is likely
+about the image, since this predicate indicates that this is the
+"main" image of the page and should be used to represent it when shown
+inline in e.g. Facebook or Twitter streams.  This is less precise than
+the two previous methods, but works on sites that are primarily about
+images.
+
+```og:image``` is also used to find the main image on the page for the
+"Copy main image with metadata" command.
+
+
+However, some sites have reasonably good RDFa, but with no good link
+to the image.  Flickr is a good example.  It associates the RDFa with
+the page URI itself.  And while it has an ```og:image``` predicate,
+that links to a smaller-size image that isn't present on the standard
+or the lightbox page.  To make the addon work on Flickr, it contains
+custom code that understands the peculiarities of the DOM tree and the
+RDFa markup on that site.  This will of course be more brittle than
+the methods above.
+
+
+Copying metadata
+================
+
+When the addon has found some metadata, the RDF triples are serialised
+as RDF/XML and put on the clipboard identified by the MIME type
+```application/rdf+xml```.  The triples include not only the ones
+directly about the image, but also any triples about subjects that are
+referred to by the image (e.g. source works).
+
+When the metadata is copied together with an image, a special triple
+is added to the RDF to help the destination application locate the
+image subject:
+
+    <> <dc:source> <imageSubjectURI>
+
+The empty subject (```<>```) is a convention taken from the RDF subset
+XMP to indicate "the surrounding or associated file".  In this
+context, the image on the clipboard together with the metadata is
+considered the associated file.  This triple thus says what the source
+is for the image data on the clipboard, and the application can then
+find out more information by looking at the triples that has the
+subject ```<imageSubjectURI>```.
+
+When only metadata is copied without the image, this triple is not
+added as there is no image data to associate it with.  Since this will
+probably mainly be used for investigating/debugging purposes, the
+metadata is also put on the clipboard as plain strings to make it easy
+to paste it into a standard text editor.
+
+
+Paste metadata
+==============
+
+To support pasting images into a browser editor with this addon, the
+editor must add the HTML class `x-enable-paste-image` to the element
+that wraps the editor (typically a `div`).  When the image is pasted,
+an `x-onpaste-image` custom event is generated with these detail
+parameters:
+
+* `image`: image data in format `"data:MIMETYPE;base64,DATA..."`.
+   Create an `img` tag and set `src` to this string to show it in the
+   page.
+* `rdfxml`: serialised RDF/XML associated with the image, or null if
+   there was no metadata.
+* `target`: the target element for the paste action
+
+There is a simple page implementing this in the `example` directory,
+using https://github.com/linkeddata/rdflib.js to process the incoming
+RDF/XML.
+
 
 
 License
