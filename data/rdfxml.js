@@ -107,7 +107,7 @@ var rdfxml = (function() {
 	    RDF_NS_URI, this.getRDFTagName('Description'));
 
 	if (subject.id.substring(0, 2) == "_:") {
-	    desc.setAttributeNS(RDF_NS_URI, this.getRDFTagName('nodeID'), subject.id.slice(2));
+	    desc.setAttributeNS(RDF_NS_URI, this.getRDFTagName('nodeID'), 'n' + subject.id.slice(2));
 	}
 	else {
 	    desc.setAttributeNS(RDF_NS_URI, this.getRDFTagName('about'), subject.id);
@@ -148,7 +148,7 @@ var rdfxml = (function() {
 
 	    if (object.value.substring(0, 2) == "_:") {
 		pred.setAttributeNS(RDF_NS_URI, this.getRDFTagName('nodeID'),
-				    object.value.slice(2));
+				    'n' + object.value.slice(2));
 
 		this.blankRefs.push(object.value);
 	    }
