@@ -96,7 +96,8 @@ It is also uploaded to the repository here:
 https://github.com/commonsmachinery/copyrdf-addon/raw/master/copyrdf.xpi
 
 
-### Building the add-on yourself
+Building the add-on yourself
+----------------------------
 
 If you build the add-on with the current stock SDK, the "Paste image"
 menu item will always be available in editor areas even when there is
@@ -120,7 +121,7 @@ support pasting metadata.
 
 
 Locating metadata
-=================
+-----------------
 
 RDF metadata consists of triples, consisting of a subject, a
 predicate, and an object.  Finding the metadata for a given image
@@ -169,7 +170,7 @@ the methods above.
 
 
 Copying metadata
-================
+----------------
 
 When the addon has found some metadata, the RDF triples are serialised
 as RDF/XML and put on the clipboard identified by the MIME type
@@ -183,7 +184,7 @@ image subject:
 
     <> <dc:source> <imageSubjectURI>
 
-The empty subject (```<>```) is a convention taken from the RDF subset
+The empty subject ```<>``` is a convention taken from the RDF subset
 XMP to indicate "the surrounding or associated file".  In this
 context, the image on the clipboard together with the metadata is
 considered the associated file.  This triple thus says what the source
@@ -199,7 +200,7 @@ to paste it into a standard text editor.
 
 
 Paste metadata
-==============
+--------------
 
 To support pasting images into a browser editor with this addon, the
 editor must add the HTML class `x-enable-paste-image` to the element
