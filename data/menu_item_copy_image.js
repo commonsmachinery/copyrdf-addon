@@ -12,13 +12,13 @@ self.on("context", function(node) {
 
 
 self.on("click", function (node, data) {
-    var subject = pageMetadata.findImageSubject(node);
+    var image = pageMetadata.findImageSubject(node);
 
-    if (!subject) {
+    if (!image) {
 	alert("Could not extract RDF/XML metadata");
 	return;
     }	
 
-    self.postMessage(getImageWithMetadata(subject, node, data));
+    self.postMessage(getImageWithMetadata(image.subject, image.element, data));
 });
 

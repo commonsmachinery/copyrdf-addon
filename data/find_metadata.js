@@ -89,8 +89,8 @@ var pageMetadata = (function() {
 
 
     //
-    // Return the RDF subject node for this DOM element, or null
-    // if there are no usable metadata.
+    // Return the { element: DOMnode, subject: RDFsubject } for this
+    // DOM element, or null if there are no usable metadata.
     //
     // The subject is located with this heuristic:
     //
@@ -100,7 +100,7 @@ var pageMetadata = (function() {
     //
     
     var findImageSubject = function(element) {
-	var subject, subjects;
+	var subject, subjects, src;
 	
 	if (!element.localName || element.localName.toLowerCase() !== 'img') {
 	    return null;
@@ -112,27 +112,32 @@ var pageMetadata = (function() {
 	    subject = document.data.getSubject('#' + element.id);
 	    if (subject) {
 		console.log('found subject on ID: ' + subject.id);
-		return subject;
 	    }
 	}
 
-	if (element.src) {
-	    subject = document.data.getSubject(unescape(element.src));
+	if (!subject && element.src) {
+	    src = decodeURIComponent(element.src);
+	    subject = document.data.getSubject(src);
 	    if (subject) {
 		console.log('found subject on src: ' + subject.id);
-		return subject;
 	    }
-
-	    subjects = document.data.getSubjects(og_image, unescape(element.src));
-	    console.log('# og:image subjects in page: ' + subjects.length);
-	    console.log('og:image subjects: ' + subjects);
-	    
-	    if (subjects.length === 1) {
-		return document.data.getSubject(subjects[0]);
+	    else {
+		subjects = document.data.getSubjects(og_image, src);
+		console.log('# og:image subjects in page: ' + subjects.length);
+		console.log('og:image subjects: ' + subjects);
+		
+		if (subjects.length === 1) {
+		    subject = document.data.getSubject(subjects[0]);
+		}
 	    }
 	}
 
-	return null;
+	if (subject) {
+	    return { element: element, subject: subject };
+	}
+	else {
+	    return null;
+	}
     };
 
     api.findImageSubject = findImageSubject;
@@ -149,6 +154,7 @@ var pageMetadata = (function() {
 	    GreenTurtle.attach(document);
 	}
     };
+
 
     var overrideFunction = function(name) {
 	var funcs = siteFunctions[document.location.hostname];
@@ -171,17 +177,31 @@ var pageMetadata = (function() {
     // defaults.
     //
 
+    var findFlickrSubject = function() {
+	var subjects;
+
+	subjects = document.data.getSubjects();
+	if (subjects.length !== 1) {
+	    console.log('not exactly one subject on flickr page');
+	    return null;
+	}
+
+	// TODO: rewrite the subject to be about og:url instead to get
+	// a better source URI
+
+	return document.data.getSubject(subjects[0]);
+    };
+    
     siteFunctions['flickr.com'] = siteFunctions['www.flickr.com'] = {
 
-	// On flickr there's a DIV over the image
-
+	// On flickr there's a DIV or SPAN over the image
 
 	findMainImage: function() {
 	    var img,  subject;
 
 	    attachData();
 
-	    subject = document.data.getSubject(document.location.href);
+	    subject = findFlickrSubject();
 
 	    // Main image page
 	    img = document.querySelector('img#liquid-photo');
@@ -192,7 +212,38 @@ var pageMetadata = (function() {
 	    }
 		
 	    if (img && subject) {
+		console.log('found flickr image');
 		return { element: img, subject: subject };
+	    }
+
+	    return findMainImage();
+	},
+
+
+	findImageSubject: function(element) {
+	    var name, img, subject;
+
+	    attachData();
+
+	    name = element.localName && element.localName.toLowerCase();
+	    
+	    if (name === 'div' && element.id === 'photo-drag-proxy') {
+		// Main image page
+		img = document.querySelector('img#liquid-photo');
+	    }
+	    else if (name === 'span' &&
+		     element.classList &&
+		     element.classList.contains('facade-of-protection')) {
+		// Lightbox
+		img = document.querySelector('span.facade-of-protection + img.loaded');
+	    }
+
+	    if (img) {
+		subject = findFlickrSubject();
+		if (subject) {
+		    console.log('found flickr image');
+		    return { element: img, subject: subject };
+		}
 	    }
 
 	    return findMainImage();
