@@ -9,6 +9,7 @@ DC = $rdf.Namespace('http://purl.org/dc/elements/1.1/');
 DCTERMS = $rdf.Namespace('http://purl.org/dc/terms/');
 CC = $rdf.Namespace('http://creativecommons.org/ns#');
 XHTML = $rdf.Namespace('http://www.w3.org/1999/xhtml/vocab#');
+OG = $rdf.Namespace('http://ogp.me/ns#');
 
 $(document).ready(function() {
    $("div").on("x-onpaste-image", function(event) {
@@ -20,15 +21,20 @@ $(document).ready(function() {
 
        var img = document.createElement('img');
        img.src = detail.image;
-       img.id = 'pasted' + detail.image.length;  // hackish ID...
+       img.id = 'pasted_' + detail.image.length + '_' + (new Date().getTime()); // uniqueish
 
        div.appendChild(img);
 
        if (detail.rdfxml) {
 	   var kb = parseRDFXML(detail.rdfxml);
 
-	   var attrib = createAttribution(kb, '', '#' + img.id);
-	   div.appendChild(attrib);
+	   // Find the source image
+	   var source = kb.any(kb.sym(''), DC('source'));
+
+	   if (source) {
+	       var attrib = createAttribution(kb, source.uri, '#' + img.id);
+	       div.appendChild(attrib);
+	   }
        }
 
        // Cram it into the target
@@ -64,41 +70,56 @@ function createAttribution(kb, srcURI, targetURI) {
     // choose one based on language, and also look for dcterms:title.
     var title = kb.any(root, DC('title'));
 
+    if (!title) {
+	// See if there's one in OG instead
+	title = kb.any(root, OG('title'));
+    }
+
+    // Use canonical URL for link, if any
+    var url = kb.any(root, OG('url'));
+
+    if (url) {
+	url = url.uri || url.value;
+    }
+    else {
+	// Fall back on subject URI, which is better than nothing
+	url = srcURI;
+    }
+	
     var attributionURL = kb.any(root, CC('attributionURL'));
-    if (attributionURL != null)
-	attributionURL = attributionURL.uri;
+    if (attributionURL != null) {
+	attributionURL = attributionURL.uri || attributionURL.value;
+    }
     
     var attributionName = kb.any(root, CC('attributionName'));
 
-    if (!attributionName)
+    if (!attributionName) {
 	attributionName = attributionURL;
+    }
 
     // Use the first of xhtml:license, dcterms:license and cc:license
 
-    var license = kb.any(root, XHTML('license'));
-    if (license == null)
-	license = kb.any(root, DCTERMS('license'));
-    if (license == null)
-	license = kb.any(root, CC('license'));
+    var license = (kb.any(root, XHTML('license')) || 
+		   kb.any(root, DCTERMS('license')) || 
+		   kb.any(root, CC('license')));
 
-    if (license != null)
-	license = license.uri;
+    if (license != null) {
+	license = license.uri || license.value;
+    }
 
     var sources = kb.each(root, DC('source'));
-
-    for (var i in sources) {
-	sources[i] = sources[i].uri;
-    }
 
     // Build attribution
 
     if (title) {
-	div.appendChild(createSpan('"'));
-	div.appendChild(createSpan(title, 'http://purl.org/dc/elements/1.1/title'));
-	div.appendChild(createSpan('" '));
+	div.appendChild(createA(url, title,
+				'http://purl.org/dc/elements/1.1/source',
+				'http://purl.org/dc/elements/1.1/title'));
     }
     else {
-	div.appendChild(createSpan('This image'));
+	div.appendChild(createA(url, 'This image',
+				'http://purl.org/dc/elements/1.1/source',
+				null));
     }
 
     if (attributionName) {
@@ -128,8 +149,18 @@ function createAttribution(kb, srcURI, targetURI) {
     if (sources.length > 0) {
 	div.appendChild(createSpan(' Sources: '));
 	for (var i in sources) {
-	    div.appendChild(createA(sources[i], sources[i], 'http://purl.org/dc/elements/1.1/source', null));
-	    div.appendChild(createSpan(' '));
+	    if (i > 0) {
+		div.appendChild(createSpan(', '));
+	    }
+
+	    if (sources[i].uri) {
+		div.appendChild(createA(sources[i].uri, sources[i].uri,
+					'http://purl.org/dc/elements/1.1/source', null));
+	    }
+	    else {
+		div.appendChild(createSpan(sources[i].value,
+					   'http://purl.org/dc/elements/1.1/source'));
+	    }
 	}
     }
 
