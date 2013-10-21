@@ -9,23 +9,26 @@
 
 var pageMetadata = (function() {
     var api = {};
-    
+    var siteFunctions = {};
+
     //
     // Return true if there is any RDF metadata at all on the page
     //
     
-    api.hasAnyMetadata = function() {
+    var hasAnyMetadata = function() {
 	attachData();
 
 	return document.data.getSubjects().length > 0;
     };
+
+    api.hasAnyMetadata = hasAnyMetadata;
 
 
     //
     // Return all RDF subject nodes on the page
     //
     
-    api.getAllSubjects = function() {
+    var getAllSubjects = function() {
 	var i, uris, subjects;
 	
 	attachData();
@@ -39,13 +42,15 @@ var pageMetadata = (function() {
 	return subjects;
     };
 
+    api.getAllSubjects = getAllSubjects;
+
 
     //
     // Return { element: DOMnode, subject: RDFsubject } or null,
     // representing the main image on the page.
     //
     
-    api.findMainImage = function() {
+    var findMainImage = function() {
 	var i, subjects, subject, srcs, src, elements;
 	
 	attachData();
@@ -80,6 +85,9 @@ var pageMetadata = (function() {
 	return null;
     };
 
+    api.findMainImage = findMainImage;
+
+
     //
     // Return the RDF subject node for this DOM element, or null
     // if there are no usable metadata.
@@ -91,7 +99,7 @@ var pageMetadata = (function() {
     // * If the element src is the object of an og:image triplet, use that subject
     //
     
-    api.findImageSubject = function(element) {
+    var findImageSubject = function(element) {
 	var subject, subjects;
 	
 	if (!element.localName || element.localName.toLowerCase() !== 'img') {
@@ -127,6 +135,8 @@ var pageMetadata = (function() {
 	return null;
     };
 
+    api.findImageSubject = findImageSubject;
+
 
     //
     // Internal functions
@@ -140,12 +150,62 @@ var pageMetadata = (function() {
 	}
     };
 
+    var overrideFunction = function(name) {
+	var funcs = siteFunctions[document.location.hostname];
+
+	if (funcs && funcs[name]) {
+	    api[name] = funcs[name];
+	}
+    };
+
+
     //
     // Predicates and other constants
     //
     
     var og_image = 'http://ogp.me/ns#image';
     
+
+    //
+    // For some sites with tricky DOM or weird RDFa we extend the
+    // defaults.
+    //
+
+    siteFunctions['flickr.com'] = siteFunctions['www.flickr.com'] = {
+
+	// On flickr there's a DIV over the image
+
+
+	findMainImage: function() {
+	    var img,  subject;
+
+	    attachData();
+
+	    subject = document.data.getSubject(document.location.href);
+
+	    // Main image page
+	    img = document.querySelector('img#liquid-photo');
+
+	    if (!img) {
+		// Lightbox
+		img = document.querySelector('span.facade-of-protection + img.loaded');
+	    }
+		
+	    if (img && subject) {
+		return { element: img, subject: subject };
+	    }
+
+	    return findMainImage();
+	},
+
+    }; // flickr.com
+
+
+    overrideFunction('hasAnyMetadata');
+    overrideFunction('getAllSubjects');
+    overrideFunction('findMainImage');
+    overrideFunction('findImageSubject');
+
 
     return api;
 }());
