@@ -479,6 +479,11 @@ RDFaProcessor.prototype.setInitialContext = function() {
    this.target.graph.prefixes["vcard"] = "http://www.w3.org/2006/vcard/ns#";
    this.target.graph.prefixes["schema"] = "http://schema.org/";
    
+   // Ugly ones that don't really have any namespaces. Improve lookup
+   // by adding them here. /peter@commonsmachinery.se
+   this.target.graph.prefixes["twitter"] = "twitter:";
+   this.target.graph.prefixes["flickr_photos"] = "flickr_photos:";
+
    // terms
    this.target.graph.terms["describedby"] = "http://www.w3.org/2007/05/powder-s#describedby";
    this.target.graph.terms["license"] = "http://www.w3.org/1999/xhtml/vocab#license";
