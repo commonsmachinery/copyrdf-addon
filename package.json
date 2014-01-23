@@ -3,8 +3,38 @@
   "fullName": "Copy RDFa metadata",
   "id": "jid1-je0gUIhMYarI1w",
   "description": "Copy RDFa metadata to the clipboard when copying images",
-  "author": "Peter Liljenberg, Commons Machinery (http://commonsmachinery.se/) [peter@commonsmachinery.se]",
+  "author": "Commons Machinery (http://commonsmachinery.se/) [dev@commonsmachinery.se]",
   "license": "GPLv2",
-  "version": "0.3.1",
-  "permissions": { "private-browsing": true }
+  "version": "0.4",
+  "permissions": { "private-browsing": true },
+
+  "preferences": [
+      {
+          "name": "standardSiteRulesURL",
+          "title": "Standard site rules",
+          "description": "If non-blank, the add-on will load standard rules from this URL to instruct it on how to find metadata on sites which don't support full auto discovery.",
+          "type": "string",
+          "value": "http://labs.commonsmachinery.se/copyrdf/site-rules.json"
+      },
+      {
+          "name": "localSiteRulesFile",
+          "title": "Local site rules",
+          "description": "If provided, load local rules from this file. These will override any standard rules.",
+          "type": "file",
+          "value": ""
+      },
+      {
+          "name": "clearLocalRulesFile",
+          "title": "Remove local site rules",
+          "label": "Remove",
+          "type": "control"
+      },
+      {
+          "name": "fetchSiteRules",
+          "title": "Update standard and local rules",
+          "label": "Update",
+          "description": "Update the site-specific rules by fetching the URL specified above and loading any local file.",
+          "type": "control"
+      }
+      ]
 }

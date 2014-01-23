@@ -1,0 +1,44 @@
+{
+    "formatVersion": 1,
+    "sites": [
+        {
+            "name": "Flickr",
+            "urls": [
+                "(www\\.)?flickr\\.com/photos/"
+            ],
+            
+            "rules": {
+                "sources": [ "rdfa", "oembed" ],
+
+                "subject": [ "link:canonicalurl",
+                             "rdf:http://ogp.me/ns#url",
+                             "oembed:web_page",
+                             "pageurl"
+                           ],
+
+                "rdfa": {
+                },
+
+                "oembed": {
+                    "type": "json",
+                    "endpoint": "http://www.flickr.com/services/oembed",
+                    "map": {
+                        "license_url": "http://www.w3.org/1999/xhtml/vocab#license"
+                    }
+                },
+
+                "mainImageElements": [
+                    "img#main-photo",
+                    "div#allsizes-photo + img",
+                    "img#liquid-photo",
+                    "span.facade-of-protection + img.loaded"
+                ],
+
+                "imageContextElements": {
+                    "div#photo-drag-proxy": "img#liquid-photo",
+                    "span.facade-of-protection": "span.facade-of-protection + img.loaded"
+                }
+            }
+        }
+    ]
+}
