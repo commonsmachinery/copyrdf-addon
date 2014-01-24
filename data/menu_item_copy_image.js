@@ -6,19 +6,11 @@
 //
 // Distributed under an GPLv2 license, please see LICENSE in the top dir.
 
-self.on("context", function(node) {
-    return pageMetadata.findImageSubject(node) != null;
-});
+(function() {
+    "use strict";
 
-
-self.on("click", function (node, data) {
-    var image = pageMetadata.findImageSubject(node);
-
-    if (!image) {
-	alert("Could not extract RDF/XML metadata");
-	return;
-    }	
-
-    self.postMessage(getImageWithMetadata(image.subject, image.element, data));
-});
+    self.on("click", function (node) {
+        self.postMessage(getImageWithMetadata(node));
+    });
+}());
 

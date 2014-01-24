@@ -6,34 +6,42 @@
 //
 // Distributed under an GPLv2 license, please see LICENSE in the top dir.
 
-var getImageWithMetadata = function(subject, element, attr) {
-    var rdfDoc, desc, source, id;
+var getImageWithMetadata = function(element) {
+    "use strict";
 
-    rdfDoc = rdfxml.fromSubject(document, subject, true);
+    var RDF_NS_URI = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
+    var id, rdf, subject, rdfDoc, desc, source;
 
-    if (subject.id) {
-	// Hack in a <> <dc:source> <subjectURI> to let paste code
-	// know what subject to use, if there is more than one
+    id = element.getAttribute(gElementIdAttr);
+    rdf = element.getAttribute(gMetadataAttr);
+    subject = element.getAttribute(gSubjectAttr);
 
-	// We _know_ the prefix will be rdf: and dc:, thanks to the default
-	// namespaces prefixes
-	desc = rdfDoc.createElementNS(rdfxml.RDF_NS_URI, 'rdf:Description');
-	desc.setAttributeNS(rdfxml.RDF_NS_URI, 'rdf:about', '');
+    if (subject) {
+        rdfDoc = new DOMParser().parseFromString(rdf, 'application/xml');
+
+        if (rdfDoc.documentElement.localName !== 'parsererror') {
+	    // Hack in a <> <dc:source> <subjectURI> to let paste code
+	    // know what subject to use, if there is more than one
+
+	    // We _know_ the prefix will be rdf: and dc:, thanks to the default
+	    // namespaces prefixes
+	    desc = rdfDoc.createElementNS(RDF_NS_URI, 'rdf:Description');
+	    desc.setAttributeNS(RDF_NS_URI, 'rdf:about', '');
 	
-	source = rdfDoc.createElementNS('http://purl.org/dc/elements/1.1/', 'dc:source');
-	source.setAttributeNS(rdfxml.RDF_NS_URI, 'rdf:resource', subject.id);
+	    source = rdfDoc.createElementNS('http://purl.org/dc/elements/1.1/', 'dc:source');
+	    source.setAttributeNS(RDF_NS_URI, 'rdf:resource', subject);
+            
+	    desc.appendChild(source);
+	    rdfDoc.documentElement.appendChild(desc);
 
-	desc.appendChild(source);
-	rdfDoc.documentElement.appendChild(desc);
+            // Reserialize document with BOM
+	    rdf = '\uFEFF<?xml version="1.0"?>\n'
+	        + new XMLSerializer().serializeToString(rdfDoc.documentElement);
+        }
+        else {
+            console.log('invalid RDF/XML: ' + rdf);
+        }
     }
     
-    // It's not possible to pass the DOM element through
-    // postMessage since it's destroyed by the JSON serialisation.
-    // Hack around that by tagging it with a magic ID and passing that 
-    // to the main code, which can then find it in the document.
-	
-    id = uuid.v1();
-    element.setAttribute(attr, id);
-
-    return { 'id': id, 'rdf': rdfxml.serializeDocument(rdfDoc) };
+    return { 'id': id, 'rdf': rdf, 'subject': subject };
 };

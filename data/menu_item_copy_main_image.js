@@ -6,18 +6,30 @@
 //
 // Distributed under an GPLv2 license, please see LICENSE in the top dir.
 
-self.on("click", function (node, data) {
-    var image = pageMetadata.findMainImage();
+(function() {
+    "use strict";
 
-    if (!image) {
-	alert("Could not find main image and extract RDF/XML metadata");
-	return;
-    }	
+    self.on("click", function (node, data) {
+        var id;
 
-    self.postMessage(getImageWithMetadata(image.subject, image.element, data));
-});
+        id = document.body.getAttribute(gMainImageIdAttr);
+        if (id) {
+            node = document.querySelector('img[' + gElementIdAttr + '="' + id + '"]');
+            if (node) {
+                self.postMessage(getImageWithMetadata(node));
+            }
+            else {
+                alert("Copy RDFa: could not find main image element");
+            }
+        }
+        else {
+            alert("Copy RDFa: could not find main image ID");
+        }
+    });
+    
+    self.on("context", function() {
+        return document.body.hasAttribute(gMainImageIdAttr);
+    });
 
-self.on("context", function(node) {
-    return pageMetadata.findMainImage() != null;
-});
-
+}());
+    
