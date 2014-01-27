@@ -6,17 +6,39 @@
 //
 // Distributed under an GPLv2 license, please see LICENSE in the top dir.
 
-var getImageWithMetadata = function(element) {
+var getImageWithMetadata = function(element, rdf,
+                                    imageElementId,
+                                    imageElementSelector,
+                                    imageSubjectURI) {
     "use strict";
 
     var RDF_NS_URI = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
-    var id, rdf, subject, rdfDoc, desc, source;
+    var id, rdfDoc, desc, source;
 
-    id = element.getAttribute(gElementIdAttr);
-    rdf = element.getAttribute(gMetadataAttr);
-    subject = element.getAttribute(gSubjectAttr);
+    if (imageElementId) {
+        // This is an indirect copy via an overlay or the main image
+        // function, so find the real element
+        element = document.querySelector('img[' + gElementIdAttr + '="' + imageElementId + '"]');
+            
+        if (!element) {
+            // Try finding the corresponding image element in the DOM, if the
+            // original one is gone by now
+            if (imageElementSelector) {
+                element = document.querySelector(imageElementSelector);
+            }
+        }
+    }
 
-    if (subject) {
+    if (!element) {
+        return { error: 'Could not find the image element that should be copied' };
+    }
+    
+    if (element.hasAttribute(gSubjectAttr)) {
+        // Go back to the source, if we can
+        imageSubjectURI = element.getAttribute(gSubjectAttr)
+    }
+
+    if (imageSubjectURI) {
         rdfDoc = new DOMParser().parseFromString(rdf, 'application/xml');
 
         if (rdfDoc.documentElement.localName !== 'parsererror') {
@@ -29,7 +51,7 @@ var getImageWithMetadata = function(element) {
 	    desc.setAttributeNS(RDF_NS_URI, 'rdf:about', '');
 	
 	    source = rdfDoc.createElementNS('http://purl.org/dc/elements/1.1/', 'dc:source');
-	    source.setAttributeNS(RDF_NS_URI, 'rdf:resource', subject);
+	    source.setAttributeNS(RDF_NS_URI, 'rdf:resource', imageSubjectURI);
             
 	    desc.appendChild(source);
 	    rdfDoc.documentElement.appendChild(desc);
@@ -39,9 +61,17 @@ var getImageWithMetadata = function(element) {
 	        + new XMLSerializer().serializeToString(rdfDoc.documentElement);
         }
         else {
-            console.log('invalid RDF/XML: ' + rdf);
+            console.warn('invalid RDF/XML: ' + rdf);
         }
     }
     
-    return { 'id': id, 'rdf': rdf, 'subject': subject };
+    // Make sure we have the ID on the image element.  At least flickr
+    // seems to be replacing the img element on some resizes...
+    id = element.getAttribute(gElementIdAttr);
+    if (!id) {
+        id = uuid.v4();
+        element.setAttribute(gElementIdAttr, id);
+    }
+
+    return { 'id': id, 'rdf': rdf, 'subject': imageSubjectURI };
 };

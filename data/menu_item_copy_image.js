@@ -10,7 +10,13 @@
     "use strict";
 
     self.on("click", function (node) {
-        self.postMessage(getImageWithMetadata(node));
+        self.postMessage(getImageWithMetadata(
+            node,
+            node.getAttribute(gMetadataAttr),
+            node.getAttribute(gOverlayIdAttr),
+            node.getAttribute(gOverlayElementSelectorAttr),
+            node.getAttribute(gOverlaySubjectAttr)
+        ));
     });
 }());
 

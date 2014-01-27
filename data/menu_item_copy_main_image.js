@@ -9,22 +9,14 @@
 (function() {
     "use strict";
 
-    self.on("click", function (node, data) {
-        var id;
-
-        id = document.body.getAttribute(gMainImageIdAttr);
-        if (id) {
-            node = document.querySelector('img[' + gElementIdAttr + '="' + id + '"]');
-            if (node) {
-                self.postMessage(getImageWithMetadata(node));
-            }
-            else {
-                alert("Copy RDFa: could not find main image element");
-            }
-        }
-        else {
-            alert("Copy RDFa: could not find main image ID");
-        }
+    self.on("click", function () {
+        self.postMessage(getImageWithMetadata(
+            null,
+            document.body.getAttribute(gMainImageMetadataAttr),
+            document.body.getAttribute(gMainImageIdAttr),
+            document.body.getAttribute(gMainImageSelectorAttr),
+            document.body.getAttribute(gMainImageSubjectAttr)
+        ));
     });
     
     self.on("context", function() {

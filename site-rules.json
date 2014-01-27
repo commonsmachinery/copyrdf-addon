@@ -10,15 +10,6 @@
             "rules": {
                 "sources": [ "rdfa", "oembed" ],
 
-                "subject": [ "link:canonicalurl",
-                             "rdf:http://ogp.me/ns#url",
-                             "oembed:web_page",
-                             "pageurl"
-                           ],
-
-                "rdfa": {
-                },
-
                 "oembed": {
                     "type": "json",
                     "endpoint": "http://www.flickr.com/services/oembed",
@@ -27,17 +18,24 @@
                     }
                 },
 
-                "mainImageElements": [
-                    "img#main-photo",
-                    "div#allsizes-photo + img",
+                "mainElement": [
+                    "img.main-photo",
+                    "div#allsizes-photo > img",
                     "img#liquid-photo",
                     "span.facade-of-protection + img.loaded"
                 ],
 
-                "imageContextElements": {
-                    "div#photo-drag-proxy": "img#liquid-photo",
-                    "span.facade-of-protection": "span.facade-of-protection + img.loaded"
-                }
+                "mainOverlayElements": {
+                    "img.main-photo": "div.photo-well-view a.navigate-target",
+                    "img#liquid-photo": "div#photo-drag-proxy",
+                    "span.facade-of-protection + img.loaded": "span.facade-of-protection"
+                },
+                
+                "rewriteMainSubject": [
+                    "oembed:web_page",
+                    "rdf:http://ogp.me/ns#url",
+                    "link:rel=\"canonical\""
+                ]
             }
         }
     ]
