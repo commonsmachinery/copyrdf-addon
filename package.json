@@ -6,7 +6,10 @@
   "author": "Commons Machinery (http://commonsmachinery.se/) [dev@commonsmachinery.se]",
   "license": "GPLv2",
   "version": "0.4",
-  "permissions": { "private-browsing": true },
+  "permissions": {
+    "private-browsing": true,
+    "cross-domain-content": [ "http://backend.deviantart.com" ]
+  },
 
   "preferences": [
       {

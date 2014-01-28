@@ -13,7 +13,14 @@
 
     var siteRules = null;
 
-    
+    var oEmbedDefaultMap = {
+        "title": "http://purl.org/dc/elements/1.1/title",
+        "web_page": "http://ogp.me/ns#url",
+        "author_name": "http://creativecommons.org/ns#attributionName",
+        "author_url": "http://creativecommons.org/ns#attributionURL"
+    };
+
+
     // At least the new flickr beta page has malformed meta tags with
     // name="foo:bar" instead of property="foo:bar, so no RDFa is
     // found.  Fix that by copying the name attribute to a property
@@ -21,7 +28,7 @@
 
     var fixMetaElements = function() {
         var i, elements, el;
-    
+
         elements = document.querySelectorAll('meta[name]');
         for (i = 0; i < elements.length; i++) {
             el = elements.item(i);
@@ -35,7 +42,7 @@
     //
     // Return all RDF subject nodes on the page
     //
-    
+
     var getAllSubjects = function() {
         var uri, subjects;
 
@@ -43,7 +50,7 @@
         for (uri in document.data.graph.subjects) {
             subjects.push(document.data.graph.subjects[uri]);
         }
-        
+
         return subjects;
     };
 
@@ -64,7 +71,7 @@
         var i, result, elements, element, subjects, subject, src, main;
 
         result = [];
-        
+
         // For now, just look at images.  We can't do this much smarter since
         // we must decode img.src URIs to get a uniform encoding of them.
         elements = document.querySelectorAll('img');
@@ -74,7 +81,7 @@
 
             subject = null;
             main = false;
-            
+
             if (element.id) {
                 subject = document.data.getSubject('#' + element.id);
                 if (subject) {
@@ -90,7 +97,7 @@
                 }
                 else {
                     subjects = document.data.getSubjects(og_image, src);
-                    
+
                     if (subjects.length === 1) {
                         subject = document.data.getSubject(subjects[0]);
                         main = true;
@@ -110,7 +117,7 @@
                 });
             }
         }
-        
+
         return result;
     };
 
@@ -159,7 +166,7 @@
     //
     // Locate the subject for this element.  Order tested:
     //
-    // * rdf:og:image: <?subjectURI> <og:image> <element.src> 
+    // * rdf:og:image: <?subjectURI> <og:image> <element.src>
     // * single-subject: If there's a single subject, use that
     // * document: use the document URL
     //
@@ -218,7 +225,7 @@
         console.warn('could not find site main subject');
         return null;
     };
-    
+
 
     //
     // Some sites put overlays over the real image, so find that one
@@ -226,11 +233,11 @@
 
     var findOverlayElements = function(selectors) {
         var elements, nodeList, i;
-        
+
         if (!selectors) {
             return null;
         }
-        
+
         if (typeof selectors === 'string') {
             selectors = [selectors];
         }
@@ -244,14 +251,14 @@
                 for (i = 0; i < nodeList.length; i++) {
                     elements.push(nodeList[i]);
                 }
-                
+
                 return elements;
             }
         }
 
         return null;
     };
-    
+
 
     //
     // Find all elements with subjects.  Returns an array:
@@ -272,7 +279,7 @@
     //
     // Return the main HTML element from the array, if any
     //
-    
+
     var findMainElement = function(elements) {
         var i;
 
@@ -281,7 +288,7 @@
                 return elements[i];
             }
         }
-                
+
         return null;
     };
 
@@ -289,17 +296,17 @@
     //
     // Rewrite the subject of the main element, if dictated by the site rules
     //
-    
+
     var rewriteMainSubject = function(el) {
         var sources, i, arg, element, objects;
 
         if (!(siteRules && siteRules.rewriteMainSubject)) {
             return;
         }
-        
+
         sources = typeof siteRules.rewriteMainSubject === 'string' ?
             [siteRules.rewriteMainSubject] : siteRules.rewriteMainSubject;
-        
+
         for (i = 0; i < sources.length; i++) {
             if (sources[i].indexOf('oembed:') === 0) {
                 // TODO: use parameter from oembed data, typically web_page
@@ -391,7 +398,7 @@
         if (el.id) {
             document.body.setAttribute(gMainImageIdAttr, el.id);
         }
-        
+
         if (el.subject.id) {
             document.body.setAttribute(gMainImageSubjectAttr, el.subject.id);
         }
@@ -402,48 +409,107 @@
     };
 
     //
+    // Create a <meta property=""> element in <head>
+    // so we can add additional metadata on page load.
+    //
+    var addMetaProperty = function(propertyName, propertyValue) {
+        var meta = document.createElement("meta");
+        meta.setAttribute("property", propertyName);
+        meta.setAttribute("content", propertyValue);
+        document.head.appendChild(meta);
+    }
+
+    //
     // Add-on message interface
     //
-    
+
     self.port.on('preparePage', function(rules) {
         var mainElement, subjectElements, i, sel;
-        
+
         siteRules = rules;
 
         console.debug('preparePage, siteRules:');
         console.debug(siteRules);
 
-        // Start with some page cleanup
-        fixMetaElements();
-        
-        // With that done, we can extract the RDFa graph
-        GreenTurtle.attach(document);
+        // extra function that does all the work on collecting metadata
+        // and saving it in the image attribute (for use in async callbacks below)
 
-        // TODO: filter out non-metadata, e.g. HTML stylesheets
-        
+        function doPreparePage() {
+            // Start with some page cleanup
+            fixMetaElements();
 
-        // Dig out all elements with metadata
-        subjectElements = findSubjectElements();
-        mainElement = findMainElement(subjectElements);
+            // With that done, we can extract the RDFa graph
+            GreenTurtle.attach(document);
 
-        if (mainElement) {
-            rewriteMainSubject(mainElement);
+            // TODO: filter out non-metadata, e.g. HTML stylesheets
+
+            // Dig out all elements with metadata
+            subjectElements = findSubjectElements();
+            mainElement = findMainElement(subjectElements);
+
+            if (mainElement) {
+                rewriteMainSubject(mainElement);
+            }
+
+            // Store RDF/XML for all metadata in the page on the body element
+            storeMetadata({ element: document.body, subject: getAllSubjects() });
+
+            // Store metadata for each subject on the corresponding element
+            for (i = 0; i < subjectElements.length; i++) {
+                storeMetadata(subjectElements[i]);
+            }
+
+            if (mainElement) {
+                storeMainImageMetadata(mainElement);
+            }
         }
 
-        // TODO: look for oEmbed links and fetch them, and add to the
+        // look for oEmbed links and fetch them, and add to the
         // graph for the main element
 
-        // Store RDF/XML for all metadata in the page on the body element
-        storeMetadata({ element: document.body, subject: getAllSubjects() });
+        if (siteRules && siteRules.oembed) {
+            // add oEmbed data as <meta> tags to increase metadata completeness
+            var req = new XMLHttpRequest();
 
-        // Store metadata for each subject on the corresponding element
-        for (i = 0; i < subjectElements.length; i++) {
-            storeMetadata(subjectElements[i]);
-        }
+            var params = "?url=" + encodeURIComponent(document.documentURI) + "&format=json";
+            var url = siteRules.oembed.endpoint + params;
 
-        if (mainElement) {
-            storeMainImageMetadata(mainElement);
+            req.open("GET", url, true);
+
+            console.debug("fetching oEmbed from " + url);
+
+            req.onload = function() {
+                console.debug("oEmbed:");
+                console.debug(req.response);
+
+                var oEmbed = JSON.parse(req.response);
+
+                for (var key in oEmbed) {
+                    var propertyName = null;
+
+                    if (oEmbedDefaultMap[key])
+                        propertyName = oEmbedDefaultMap[key];
+
+                    if (siteRules.oembed.map[key])
+                        propertyName = siteRules.oembed.map[key];
+
+                    if (propertyName) {
+                        addMetaProperty(propertyName, oEmbed[key]);
+                    }
+                }
+
+                doPreparePage();
+            }
+
+            req.onerror = function() {
+                doPreparePage();
+            }
+
+            req.send();
+        } else {
+            // no oEmbed, so just use whatever metadata we have
+            doPreparePage();
         }
     });
-    
+
 } ());
