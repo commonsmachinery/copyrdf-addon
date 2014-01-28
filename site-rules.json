@@ -6,7 +6,7 @@
             "urls": [
                 "(www\\.)?flickr\\.com/photos/"
             ],
-            
+
             "rules": {
                 "sources": [ "rdfa", "oembed" ],
 
@@ -30,13 +30,36 @@
                     "img#liquid-photo": "div#photo-drag-proxy",
                     "span.facade-of-protection + img.loaded": "span.facade-of-protection"
                 },
-                
+
                 "rewriteMainSubject": [
                     "oembed:web_page",
                     "rdf:http://ogp.me/ns#url",
                     "link:rel=\"canonical\""
                 ]
             }
+        },
+
+        {
+            "name": "deviantART",
+            "urls": [
+                "(.+)\\.deviantart\\.com/art/"
+            ],
+
+            "rules": {
+                "sources": [ "oembed" ],
+
+                "oembed": {
+                    "type": "json",
+                    "endpoint": "http://backend.deviantart.com/oembed",
+                    "map": {
+                    }
+                },
+
+                "mainElement": [
+                    "img.dev-content-normal"
+                ]
+            }
         }
+
     ]
 }
