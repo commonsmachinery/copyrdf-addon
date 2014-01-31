@@ -406,6 +406,9 @@
         if (el.mainElementSelector) {
             document.body.setAttribute(gMainImageSelectorAttr, el.mainElementSelector);
         }
+
+        // save location so we can later compare it with the address bar
+        document.body.setAttribute(gMetadataRelAttr, document.documentURI);
     };
 
     //
@@ -420,12 +423,20 @@
     }
 
     //
+    // Delete meta property (for cleaning metadata coming from oEmbed)
+    //
+    var removeMetaProperty = function(propertyName) {
+        var elements = document.querySelectorAll('head > meta[property="' + propertyName + '"]');
+        for (var i = 0; i < elements.length; ++i) {
+            elements[i].parentNode.removeChild(elements[i]);
+        }
+    }
+
+    //
     // Add-on message interface
     //
 
     self.port.on('preparePage', function(rules) {
-        var mainElement, subjectElements, i, sel;
-
         siteRules = rules;
 
         console.debug('preparePage, siteRules:');
@@ -434,7 +445,10 @@
         // extra function that does all the work on collecting metadata
         // and saving it in the image attribute (for use in async callbacks below)
 
-        function doPreparePage() {
+        function doPrepareRDFa() {
+
+            var mainElement, subjectElements, i, sel;
+
             // Start with some page cleanup
             fixMetaElements();
 
@@ -467,48 +481,79 @@
         // look for oEmbed links and fetch them, and add to the
         // graph for the main element
 
-        if (siteRules && siteRules.oembed) {
-            // add oEmbed data as <meta> tags to increase metadata completeness
-            var req = new XMLHttpRequest();
+        function doPreparePage() {
+            if (siteRules && siteRules.oembed) {
+                // add oEmbed data as <meta> tags to increase metadata completeness
+                var req = new XMLHttpRequest();
 
-            var params = "?url=" + encodeURIComponent(document.documentURI) + "&format=json";
-            var url = siteRules.oembed.endpoint + params;
+                var params = "?url=" + encodeURIComponent(document.documentURI) + "&format=json";
+                var url = siteRules.oembed.endpoint + params;
 
-            req.open("GET", url, true);
+                req.open("GET", url, true);
 
-            console.debug("fetching oEmbed from " + url);
+                console.debug("fetching oEmbed from " + url);
 
-            req.onload = function() {
-                console.debug("oEmbed:");
-                console.debug(req.response);
+                req.onload = function() {
+                    console.debug("oEmbed:");
+                    console.debug(req.response);
 
-                var oEmbed = JSON.parse(req.response);
+                    var oEmbed = JSON.parse(req.response);
 
-                for (var key in oEmbed) {
-                    var propertyName = null;
+                    for (var key in oEmbed) {
+                        var propertyName = null;
 
-                    if (oEmbedDefaultMap[key])
-                        propertyName = oEmbedDefaultMap[key];
+                        if (oEmbedDefaultMap[key])
+                            propertyName = oEmbedDefaultMap[key];
 
-                    if (siteRules.oembed.map[key])
-                        propertyName = siteRules.oembed.map[key];
+                        if (siteRules.oembed.map[key])
+                            propertyName = siteRules.oembed.map[key];
 
-                    if (propertyName) {
-                        addMetaProperty(propertyName, oEmbed[key]);
+                        if (propertyName) {
+                            addMetaProperty(propertyName, oEmbed[key]);
+                        }
                     }
+
+                    doPrepareRDFa();
                 }
 
-                doPreparePage();
-            }
+                req.onerror = function() {
+                    doPrepareRDFa();
+                }
 
-            req.onerror = function() {
-                doPreparePage();
+                req.send();
+            } else {
+                // no oEmbed, so just use whatever metadata we have
+                doPrepareRDFa();
             }
+        }
 
-            req.send();
-        } else {
-            // no oEmbed, so just use whatever metadata we have
-            doPreparePage();
+        // ready?
+        doPreparePage();
+
+        // watch out for document URL change on Flickr
+        // (hackish way to figure out that metadata needs a refresh too)
+        if (document.documentURI.match("(www\\.)?flickr\\.com/photos/")) {
+            var intervalCallback = function() {
+
+                if (window.document.body.hasAttribute(gMetadataRelAttr) &&
+                    window.document.body.getAttribute(gMetadataRelAttr) != window.document.documentURI) {
+
+                    // clean meta properties originating from oEmbed,
+                    // so they dont accumulate in <head>
+                    for (var key in oEmbedDefaultMap) {
+                        removeMetaProperty(oEmbedDefaultMap[key]);
+                    }
+                    if (siteRules.oembed && siteRules.oembed.map) {
+                        for (var key in siteRules.oembed.map) {
+                            removeMetaProperty(siteRules.oembed.map[key]);
+                        }
+                    }
+
+                    doPreparePage();
+                }
+            };
+
+            window.setInterval(intervalCallback, 1000);
         }
     });
 

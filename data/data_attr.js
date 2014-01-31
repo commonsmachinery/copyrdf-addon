@@ -13,6 +13,7 @@ var gMetadataAttr = gDataAttrPrefix + '-metadata';
 // Attributes stored on <body>, identifying the main image.  The
 // metadata is also copied here, in case the <img> tag gets replaced.
 //
+var gMetadataRelAttr = gDataAttrPrefix + '-metadata-rel';
 var gMainImageIdAttr = gDataAttrPrefix + '-main-id';
 var gMainImageSubjectAttr = gDataAttrPrefix + '-main-subject';
 var gMainImageMetadataAttr = gDataAttrPrefix + '-main-metadata';
