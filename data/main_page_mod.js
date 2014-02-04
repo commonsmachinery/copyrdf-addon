@@ -12,6 +12,7 @@
     var og_image = 'http://ogp.me/ns#image';
 
     var siteRules = null;
+    var oEmbed = null;
 
     var oEmbedDefaultMap = {
         "title": "http://purl.org/dc/elements/1.1/title",
@@ -298,7 +299,7 @@
     //
 
     var rewriteMainSubject = function(el) {
-        var sources, i, arg, element, objects;
+        var sources, i, arg, element, objects, oEmbedParameter;
 
         if (!(siteRules && siteRules.rewriteMainSubject)) {
             return;
@@ -309,7 +310,13 @@
 
         for (i = 0; i < sources.length; i++) {
             if (sources[i].indexOf('oembed:') === 0) {
-                // TODO: use parameter from oembed data, typically web_page
+                // use parameter from oembed data, typically web_page
+                arg = sources[i].slice(7);
+                oEmbedParameter = oEmbed[arg];
+                if (oEmbedParameter) {
+                    doRewrite(el, oEmbedParameter, sources[i]);
+                    return;
+                }
             }
             else if (sources[i].indexOf('rdf:') === 0) {
                 // Find a triple with this predicate
@@ -407,28 +414,70 @@
             document.body.setAttribute(gMainImageSelectorAttr, el.mainElementSelector);
         }
 
-        // save location so we can later compare it with the address bar
         document.body.setAttribute(gMetadataRelAttr, document.documentURI);
     };
 
     //
-    // Create a <meta property=""> element in <head>
-    // so we can add additional metadata on page load.
+    // Add fake triple to a graph for merging into GreenTurtle data
     //
-    var addMetaProperty = function(propertyName, propertyValue) {
-        var meta = document.createElement("meta");
-        meta.setAttribute("property", propertyName);
-        meta.setAttribute("content", propertyValue);
-        document.head.appendChild(meta);
+
+    var addFakeTriple = function(graph, subject, predicate, object) {
+        if (!graph.hasOwnProperty(subject)) {
+            graph[subject] = {
+                "subject": subject,
+                "id": subject,
+                "predicates": {},
+                "origins":[],
+                "types":[]
+            };
+        }
+
+        if (!graph[subject].predicates.hasOwnProperty(predicate)) {
+            graph[subject].predicates[predicate] = {
+                "id": predicate,
+                "predicate": predicate,
+                "objects": [],
+            };
+        }
+
+        // do nothing if the triple is already present
+        for (var o in graph[subject].predicates[predicate]) {
+            if (o.value == object) {
+                return;
+            }
+        }
+
+        graph[subject].predicates[predicate].objects.push({
+            "type": "http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral",
+            "value": object
+        });
     }
 
     //
-    // Delete meta property (for cleaning metadata coming from oEmbed)
+    // Collect metadata and save it in the image and body attributes.
+    // Should be called after document.data is filled with oEmbed or RDFa data.
     //
-    var removeMetaProperty = function(propertyName) {
-        var elements = document.querySelectorAll('head > meta[property="' + propertyName + '"]');
-        for (var i = 0; i < elements.length; ++i) {
-            elements[i].parentNode.removeChild(elements[i]);
+
+    var prepareMetadata = function() {
+        var mainElement, subjectElements, i;
+
+        subjectElements = findSubjectElements();
+        mainElement = findMainElement(subjectElements);
+
+        if (mainElement) {
+            rewriteMainSubject(mainElement);
+        }
+
+        // Store RDF/XML for all metadata in the page on the body element
+        storeMetadata({ element: document.body, subject: getAllSubjects() });
+
+        // Store metadata for each subject on the corresponding element
+        for (i = 0; i < subjectElements.length; i++) {
+            storeMetadata(subjectElements[i]);
+        }
+
+        if (mainElement) {
+            storeMainImageMetadata(mainElement);
         }
     }
 
@@ -439,121 +488,116 @@
     self.port.on('preparePage', function(rules) {
         siteRules = rules;
 
+        var isFlickr = document.documentURI.match("(www\\.)?flickr\\.com/photos/");
+        var isDeviantArt = document.documentURI.match("(.+)\\.deviantart\\.com/art/");
+
         console.debug('preparePage, siteRules:');
         console.debug(siteRules);
 
-        // extra function that does all the work on collecting metadata
-        // and saving it in the image attribute (for use in async callbacks below)
-
-        function doPrepareRDFa() {
-
-            var mainElement, subjectElements, i, sel;
-
-            // Start with some page cleanup
+        function prepareRDFa() {
+            //document.data._data_.graph.clear();
             fixMetaElements();
-
-            // With that done, we can extract the RDFa graph
             GreenTurtle.attach(document);
 
-            // TODO: filter out non-metadata, e.g. HTML stylesheets
-
-            // Dig out all elements with metadata
-            subjectElements = findSubjectElements();
-            mainElement = findMainElement(subjectElements);
-
-            if (mainElement) {
-                rewriteMainSubject(mainElement);
-            }
-
-            // Store RDF/XML for all metadata in the page on the body element
-            storeMetadata({ element: document.body, subject: getAllSubjects() });
-
-            // Store metadata for each subject on the corresponding element
-            for (i = 0; i < subjectElements.length; i++) {
-                storeMetadata(subjectElements[i]);
-            }
-
-            if (mainElement) {
-                storeMainImageMetadata(mainElement);
-            }
+            prepareMetadata();
         }
 
-        // look for oEmbed links and fetch them, and add to the
-        // graph for the main element
+        function prepareOEmbed() {
+            var req = new XMLHttpRequest();
 
-        function doPreparePage() {
-            if (siteRules && siteRules.oembed) {
-                // add oEmbed data as <meta> tags to increase metadata completeness
-                var req = new XMLHttpRequest();
+            var params = "?url=" + encodeURIComponent(document.documentURI) + "&format=json";
+            var url = siteRules.oembed.endpoint + params;
 
-                var params = "?url=" + encodeURIComponent(document.documentURI) + "&format=json";
-                var url = siteRules.oembed.endpoint + params;
+            req.open("GET", url, true);
 
-                req.open("GET", url, true);
+            console.debug("fetching oEmbed from " + url);
 
-                console.debug("fetching oEmbed from " + url);
+            req.onload = function() {
+                console.debug("oEmbed:\n" + req.response);
 
-                req.onload = function() {
-                    console.debug("oEmbed:");
-                    console.debug(req.response);
+                oEmbed = {};
+                oEmbed = JSON.parse(req.response);
 
-                    var oEmbed = JSON.parse(req.response);
+                var oEmbedGraph = new Object();
+                var oEmbedSubject = document.documentURI; // gets rewritten later
 
-                    for (var key in oEmbed) {
-                        var propertyName = null;
+                if (isDeviantArt) {
+                    // yet another deviantArt hack - make sure we have valid web_page
+                    // in the oEmbed dict because <link rel="canonical"> or the document URL won't work here
+                    oEmbed["web_page"] = oEmbed["author_url"] + window.location.pathname;
 
-                        if (oEmbedDefaultMap[key])
-                            propertyName = oEmbedDefaultMap[key];
+                    // also get the license out of HTML
+                    /* // TODO, the current selector fails to find relevant links, if there's more than 2
+                    var urlParts = window.location.pathname.split("-");
+                    var fakeDevID = urlParts[urlParts.length - 1];
 
-                        if (siteRules.oembed.map[key])
-                            propertyName = siteRules.oembed.map[key];
-
-                        if (propertyName) {
-                            addMetaProperty(propertyName, oEmbed[key]);
+                    var licenseLinks = document.querySelectorAll('a[rel="license"]');
+                    for (var i = 0; i < licenseLinks.length; ++i) {
+                        var item = licenseLinks[i];
+                        if (item.offsetWidth > 0 && item.offsetHeight > 0) {
+                            oEmbed["license_url"] = item.getAttribute("href");
+                            break;
                         }
                     }
-
-                    doPrepareRDFa();
+                    */
                 }
 
-                req.onerror = function() {
-                    doPrepareRDFa();
+                for (var key in oEmbed) {
+                    var propertyName = null;
+
+                    if (oEmbedDefaultMap[key])
+                        propertyName = oEmbedDefaultMap[key];
+
+                    if (siteRules.oembed.map[key])
+                        propertyName = siteRules.oembed.map[key];
+
+                    if (propertyName) {
+                        addFakeTriple(oEmbedGraph, oEmbedSubject, propertyName, oEmbed[key]);
+                    }
                 }
 
-                req.send();
-            } else {
-                // no oEmbed, so just use whatever metadata we have
-                doPrepareRDFa();
+                document.data.graph.clear();
+                document.data.merge(oEmbedGraph);
+                prepareMetadata();
             }
+
+            req.onerror = function() {
+                console.debug("error getting oEmbed");
+            }
+
+            req.send();
         }
 
-        // ready?
-        doPreparePage();
+        if (siteRules && siteRules.source == "oembed") {
+            // look for oEmbed links and fetch them, and add to the graph for the main element
+            prepareOEmbed();
+        } else {
+            // or let's hope RDFa works
+            prepareRDFa();
+        }
 
-        // watch out for document URL change on Flickr
-        // (hackish way to figure out that metadata needs a refresh too)
-        if (document.documentURI.match("(www\\.)?flickr\\.com/photos/")) {
-            var intervalCallback = function() {
-
+        // watch out for document URL change on Flickr and DA
+        // (hackish way to figure out that oEmbed metadata needs a refresh too)
+        if (isFlickr || isDeviantArt) {
+            var timeoutCallback = function() {
                 if (window.document.body.hasAttribute(gMetadataRelAttr) &&
                     window.document.body.getAttribute(gMetadataRelAttr) != window.document.documentURI) {
 
-                    // clean meta properties originating from oEmbed,
-                    // so they dont accumulate in <head>
-                    for (var key in oEmbedDefaultMap) {
-                        removeMetaProperty(oEmbedDefaultMap[key]);
-                    }
-                    if (siteRules.oembed && siteRules.oembed.map) {
-                        for (var key in siteRules.oembed.map) {
-                            removeMetaProperty(siteRules.oembed.map[key]);
+                    if (isDeviantArt) {
+                        // delete any image previously spiced with metadata
+                        var daDump = document.querySelectorAll('img[' + gSubjectAttr + '="' + window.document.body.getAttribute(gMetadataRelAttr) + '"]');
+
+                        for (var i = 0; i < daDump.length; ++i) {
+                            var item = daDump[i];
+                            item.parentNode.removeChild(item);
                         }
                     }
 
-                    doPreparePage();
+                    prepareOEmbed();
                 }
             };
 
-            window.setInterval(intervalCallback, 1000);
+            window.setInterval(timeoutCallback, 1000);
         }
     });
 
