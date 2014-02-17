@@ -5,7 +5,7 @@
   "description": "Copy RDFa metadata to the clipboard when copying images",
   "author": "Commons Machinery (http://commonsmachinery.se/) [dev@commonsmachinery.se]",
   "license": "GPLv2",
-  "version": "0.4.1",
+  "version": "0.4.1a",
   "permissions": {
     "private-browsing": true,
     "cross-domain-content": [ "http://backend.deviantart.com" ]
