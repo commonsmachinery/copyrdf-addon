@@ -29,27 +29,29 @@ The addon has been tested against these sites:
 Copy metadata and images
 ------------------------
 
-When an image has metadata, it's context menu now has two new
-items:
-
-* Copy image metadata
-* Copy image with metadata
-
-The first item extract the metadata and puts is RDF/XML on the
-clipboard.  It can then be pasted into e.g. a text editor.
-
-The second item puts both the image and the RDF/XML on the clipboard.
-An application that supports this format of data can paste both the
-image and the metadata into another document, and use the metadata to
-e.g. create an automatic credit line.
+When an image has metadata, it's context menu now has a new menu item:
+"Copy image with credits".  This extract the metadata and puts both
+the image and the RDF/XML on the clipboard.  An application that
+supports this format of data can paste both the image and the metadata
+into another document, and use the metadata to e.g. create an
+automatic credit line.
 
 An application that doesn't use the metadata will still be able to
 paste the image itself.
 
-The page context menu can also have two additional menu items:
+The page context menu can also have an additional menu items called
+"Copy main image with credits".  This is available when the addon can
+determine that a particular image is the "main" image, e.g. on a
+Flickr photo page.  This is mainly useful on some web sites where the
+image may be difficult to click on to get the context menu.
 
-* Copy page metadata
-* Copy main image with metadata.
+
+There are two additional metadata menu items that are mostly useful to
+developers, so they must be explicitly enabled in the preferences for
+the addon.  When enabled, "Copy image metadata" and "Copy page
+metadata" can be used to copy all metadata for an image or on the page
+as a whole as RDF/XML to the clipboard as regular text.  It can then
+be pasted into e.g. a text editor for further study.
 
 
 ### Limitations
@@ -92,7 +94,8 @@ Installing
 The add-on can be installed from the Mozilla registry:
 https://addons.mozilla.org/en-US/firefox/addon/copy-rdfa-metadata/
 
-It is also uploaded to the repository here:
+It is also uploaded to the repository here (may be more recent if a
+new addon version is yet to be reviewed by the Mozilla addon team):
 https://github.com/commonsmachinery/copyrdf-addon/raw/master/copyrdf.xpi
 
 
@@ -224,9 +227,10 @@ RDF/XML.
 License
 =======
 
-Copyright 2013 Commons Machinery http://commonsmachinery.se/
+Copyright 2013-2014 Commons Machinery http://commonsmachinery.se/
 
 Author(s): Peter Liljenberg <peter@commonsmachinery.se>
+           Artem Popov <artfwo@commonsmachinery.se>
 
 Distributed under an GPLv2 license, please see the LICENSE file for
 details.
