@@ -5,7 +5,7 @@
   "description": "Copy RDFa metadata to the clipboard when copying images",
   "author": "Commons Machinery (http://commonsmachinery.se/) [dev@commonsmachinery.se]",
   "license": "GPLv2",
-  "version": "0.4.1a",
+  "version": "0.4.2",
   "permissions": {
     "private-browsing": true,
     "cross-domain-content": [ "http://backend.deviantart.com" ]
@@ -38,6 +38,13 @@
           "label": "Update",
           "description": "Update the site-specific rules by fetching the URL specified above and loading any local file.",
           "type": "control"
+      },
+      {
+          "name": "showCopyMetadata",
+          "title": "Enable metadata menu items",
+          "description": "Add context menu items to copy all metadata for an image or a page to the clipboard as regular text (useful for e.g. debugging).",
+          "type": "bool",
+          "value": false
       }
       ]
 }
