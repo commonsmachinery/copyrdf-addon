@@ -12,7 +12,7 @@
 
                 "oembed": {
                     "type": "json",
-                    "endpoint": "http://www.flickr.com/services/oembed",
+                    "endpoint": "//www.flickr.com/services/oembed",
                     "map": {
                         "license_url": "http://www.w3.org/1999/xhtml/vocab#license"
                     }
