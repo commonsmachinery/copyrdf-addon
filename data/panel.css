@@ -1,0 +1,19 @@
+body {
+    background: #8CC8EF;
+}
+
+p {
+    margin: 0.5ex 0px;
+    font-size: 10pt;
+}
+
+.box {
+    margin: 1ex;
+    padding: 1ex;
+    background: #F5F5F5;
+    border-radius: 1ex;
+}
+
+.buttons {
+    margin: 1ex;
+}

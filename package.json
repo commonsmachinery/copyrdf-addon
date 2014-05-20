@@ -7,10 +7,17 @@
   "license": "GPLv2",
   "version": "0.4.3",
   "permissions": {
-    "private-browsing": true
   },
 
   "preferences": [
+      {
+          "name": "catalogEndpoint",
+          "title": "Catalog endpoint URL",
+          "description": "The URL to the REST API of your preferred catalog.",
+          "type": "string",
+          "value": "https://dev.commonsmachinery.se"
+      },
+
       {
           "name": "standardSiteRulesURL",
           "title": "Standard site rules",

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="panel.css">
+  </head>
+  <body>
+    <div class="box">
+      <p>
+        <b>Catalog:</b> <span id="catalog-name"></span>
+      </p>
+      <p>
+        <a target="_blank" href="#" id="endpoint-url"></a>
+      </p>
+      <p class="logged-in">
+        <b>Logged in:</b> <span id="current-email"></span>
+      </p>
+    </div>
+
+    <div class="buttons logged-in">
+      <button id="logout">Log out</button>
+    </div>
+
+    <div class="buttons logged-out">
+      <formset class="login-form">
+        <input type="text" id="login-username" placeholder="Username" autofocus size="12">
+        <input type="password" id="login-password" placeholder="Password" size="12">
+        <button id="login">Login</button>
+      </formset>
+    </div>
+
+    <div class="box" id="error">
+      <p>
+        <b>Error:</b> <span id="error-message"></span>
+      </p>
+    </div>
+  <body>
+</html>
