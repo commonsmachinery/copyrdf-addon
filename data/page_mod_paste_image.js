@@ -1,11 +1,13 @@
 
 self.port.on('paste-image', function(data) {
+    'use strict';
+
     var selector = '[' + data.idAttr + '="' + data.id + '"]';
     var target = document.querySelector(selector);
 	
-    if (target == null) {
-	console.log("can't find target element");
-	return;
+    if (target === null) {
+        console.log("can't find target element");
+        return;
     }
 	
     // Clean up the magic ID tag
@@ -15,10 +17,10 @@ self.port.on('paste-image', function(data) {
     var event = document.createEvent('CustomEvent');
 
     event.initCustomEvent('x-onpaste-image', true, true, {
-	image: data.image,
-	rdfxml: data.rdfxml,
-	target: target,
-	time: new Date(),
+        image: data.image,
+        rdfxml: data.rdfxml,
+        target: target,
+        time: new Date(),
     });
 
     target.dispatchEvent(event);

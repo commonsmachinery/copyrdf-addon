@@ -6,6 +6,8 @@
 //
 // Distributed under an GPLv2 license, please see LICENSE in the top dir.
 
+/* global uuid, GreenTurtle, rdfxml */
+
 (function() {
     'use strict';
 
@@ -49,7 +51,9 @@
 
         subjects = [];
         for (uri in document.data.graph.subjects) {
-            subjects.push(document.data.graph.subjects[uri]);
+            if (document.data.graph.subjects.hasOwnProperty(uri)) {
+                subjects.push(document.data.graph.subjects[uri]);
+            }
         }
 
         return subjects;
@@ -441,9 +445,12 @@
         }
 
         // do nothing if the triple is already present
-        for (var o in graph[subject].predicates[predicate]) {
-            if (o.value == object) {
-                return;
+        var preds = graph[subject].predicates;
+        for (var o in preds[predicate]) {
+            if (preds.hasOwnProperty(o)) {
+                if (o.value === object) {
+                    return;
+                }
             }
         }
 
@@ -451,7 +458,7 @@
             "type": "http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral",
             "value": object
         });
-    }
+    };
 
     //
     // Collect metadata and save it in the image and body attributes.
@@ -479,7 +486,7 @@
         if (mainElement) {
             storeMainImageMetadata(mainElement);
         }
-    }
+    };
 
     //
     // Add-on message interface
@@ -518,52 +525,56 @@
                 oEmbed = {};
                 oEmbed = JSON.parse(req.response);
 
-                var oEmbedGraph = new Object();
+                var oEmbedGraph = {};
                 var oEmbedSubject = document.documentURI; // gets rewritten later
 
                 if (isDeviantArt) {
                     // yet another deviantArt hack - make sure we have valid web_page
                     // in the oEmbed dict because <link rel="canonical"> or the document URL won't work here
-                    oEmbed["web_page"] = oEmbed["author_url"] + window.location.pathname;
+                    oEmbed.web_page = oEmbed.author_url + window.location.pathname;
 
                     // also get the license out of HTML
                     /* // TODO, the current selector fails to find relevant links, if there's more than 2
-                    var urlParts = window.location.pathname.split("-");
-                    var fakeDevID = urlParts[urlParts.length - 1];
+                       var urlParts = window.location.pathname.split("-");
+                       var fakeDevID = urlParts[urlParts.length - 1];
 
-                    var licenseLinks = document.querySelectorAll('a[rel="license"]');
-                    for (var i = 0; i < licenseLinks.length; ++i) {
-                        var item = licenseLinks[i];
-                        if (item.offsetWidth > 0 && item.offsetHeight > 0) {
-                            oEmbed["license_url"] = item.getAttribute("href");
-                            break;
-                        }
-                    }
+                       var licenseLinks = document.querySelectorAll('a[rel="license"]');
+                       for (var i = 0; i < licenseLinks.length; ++i) {
+                       var item = licenseLinks[i];
+                       if (item.offsetWidth > 0 && item.offsetHeight > 0) {
+                       oEmbed["license_url"] = item.getAttribute("href");
+                       break;
+                       }
+                       }
                     */
                 }
 
                 for (var key in oEmbed) {
-                    var propertyName = null;
+                    if (oEmbed.hasOwnProperty(key)) {
+                        var propertyName = null;
 
-                    if (oEmbedDefaultMap[key])
-                        propertyName = oEmbedDefaultMap[key];
+                        if (oEmbedDefaultMap[key]) {
+                            propertyName = oEmbedDefaultMap[key];
+                        }
 
-                    if (siteRules.oembed.map[key])
-                        propertyName = siteRules.oembed.map[key];
+                        if (siteRules.oembed.map[key]) {
+                            propertyName = siteRules.oembed.map[key];
+                        }
 
-                    if (propertyName) {
-                        addFakeTriple(oEmbedGraph, oEmbedSubject, propertyName, oEmbed[key]);
+                        if (propertyName) {
+                            addFakeTriple(oEmbedGraph, oEmbedSubject, propertyName, oEmbed[key]);
+                        }
                     }
                 }
 
                 document.data.graph.clear();
                 document.data.merge(oEmbedGraph);
                 prepareMetadata();
-            }
+            };
 
             req.onerror = function() {
                 console.debug("error getting oEmbed");
-            }
+            };
 
             req.send();
         }
@@ -571,7 +582,7 @@
         // temporarily disable DA until the license issue is figured out
         // (remove the following 'if' clause as soon as the issue is solved)
         if (!isDeviantArt) {
-            if (siteRules && siteRules.source == "oembed") {
+            if (siteRules && siteRules.source === "oembed") {
                 // look for oEmbed links and fetch them, and add to the graph for the main element
                 prepareOEmbed();
             } else {
@@ -584,7 +595,7 @@
             if (isFlickr || isDeviantArt) {
                 var timeoutCallback = function() {
                     if (window.document.body.hasAttribute(gMetadataRelAttr) &&
-                        window.document.body.getAttribute(gMetadataRelAttr) != window.document.documentURI) {
+                        window.document.body.getAttribute(gMetadataRelAttr) !== window.document.documentURI) {
 
                         if (isDeviantArt) {
                             // delete any image previously spiced with metadata

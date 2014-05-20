@@ -6,7 +6,7 @@
 //
 // Distributed under an GPLv2 license, please see LICENSE in the top dir.
 
-var file = require('sdk/io/file');
+'use strict';
 
 var siteRules = require("./site-rules");
 

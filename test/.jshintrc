@@ -1,0 +1,18 @@
+{
+    "bitwise": true,
+    "curly": true,
+    "eqeqeq": true,
+    "forin": true,
+    "freeze": true,
+    "immed": true,
+    "latedef": true,
+    "undef": true,
+    "unused": "vars",
+    "strict": true,
+
+    "predef": [ "require", "exports" ],
+    "devel": true,
+    "moz": true,
+    "newcap": false,
+    "globalstrict": true
+}

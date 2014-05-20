@@ -1,3 +1,8 @@
+// Special linting since this file just defines the predefined
+// variables in .jshintrc:
+/* jshint -W079, unused:false */
+
+
 // Build the data attributes where we keep metadata on the addon ID
 var gAddonID = 'jid1-je0gUIhMYarI1w';
 var gDataAttrPrefix = 'data-' + gAddonID;
@@ -27,3 +32,4 @@ var gMainImageSelectorAttr = gDataAttrPrefix + '-main-selector';
 var gOverlayIdAttr = gDataAttrPrefix + '-overlay-id';
 var gOverlaySubjectAttr = gDataAttrPrefix + '-overlay-subject';
 var gOverlayElementSelectorAttr = gDataAttrPrefix + '-overlay-selector';
+

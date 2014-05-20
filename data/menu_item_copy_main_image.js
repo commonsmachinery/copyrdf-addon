@@ -6,6 +6,8 @@
 //
 // Distributed under an GPLv2 license, please see LICENSE in the top dir.
 
+/* global getImageWithMetadata */
+
 (function() {
     "use strict";
 
