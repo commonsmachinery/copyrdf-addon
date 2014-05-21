@@ -6,7 +6,7 @@
 //
 // Distributed under an GPLv2 license, please see LICENSE in the top dir.
 
-/* global uuid, GreenTurtle, rdfxml */
+/* global uuid, GreenTurtle, rdfjson */
 
 (function() {
     'use strict';
@@ -366,8 +366,7 @@
 
     var storeMetadata = function(el) {
         var i;
-        var rdfDoc = rdfxml.fromSubject(document, el.subject, true);
-        var rdf = rdfxml.serializeDocument(rdfDoc);
+        var rdf = JSON.stringify(rdfjson(document, el.subject, true));
 
         el.element.setAttribute(gMetadataAttr, rdf);
 
@@ -401,8 +400,7 @@
     //
 
     var storeMainImageMetadata = function(el) {
-        var rdfDoc = rdfxml.fromSubject(document, el.subject, true);
-        var rdf = rdfxml.serializeDocument(rdfDoc);
+        var rdf = JSON.stringify(rdfjson(document, el.subject, true));
 
         document.body.setAttribute(gMainImageMetadataAttr, rdf);
 

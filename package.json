@@ -1,11 +1,11 @@
 {
-  "name": "copyrdf",
-  "fullName": "Copy RDFa metadata",
+  "name": "elogio",
+  "fullName": "Elog.io catalog integration",
   "id": "jid1-je0gUIhMYarI1w",
-  "description": "Copy RDFa metadata to the clipboard when copying images",
+  "description": "Collect image sources into Elog.io while browsing (demo)",
   "author": "Commons Machinery (http://commonsmachinery.se/) [dev@commonsmachinery.se]",
   "license": "GPLv2",
-  "version": "0.4.3",
+  "version": "0.0.1",
   "permissions": {
   },
 
