@@ -55,33 +55,13 @@ $(document).ready(function() {
             var orig = ev.originalEvent;
             var dt = orig.dataTransfer;
 
-            var entryData = dt.getData('application/x-catalog-entry');
-            var html = dt.getData('text/html');
-
-            console.log('got:', html);
-
-            if (entryData && html) {
-                var entry = JSON.parse(entryData);
-                var kb = new $rdf.IndexedFormula();
-
-                console.log('metadata: %j', entry.cachedExternalMetadataGraph);
-
-                $rdf.jsonParser.parseJSON(entry.cachedExternalMetadataGraph, null, kb)
-                var credit = libcredit.credit(kb, entry.resource);
-
-                if (credit) {
-                    var topDiv = $('<div></div>');
-                    var objectDiv = $('<div></div>').appendTo(topDiv);
-                    var img = $(html).appendTo(objectDiv);
-
-                    var formatter = libcredit.htmlCreditFormatter(document);
-                    credit.format(formatter, 2, null, img.attr('src'));
-
-                    topDiv.append($(formatter.getRoot()));
-
-                    $(ev.target).append(topDiv);
-                    ev.preventDefault();
-                }
+            // Just log what is dropped, since the HTML coming from
+            // the catalog works just fine.
+            for (var i = 0; i < dt.types.length; i++) {
+                console.log(i, dt.types[i]);
             }
+
+            var entry = dt.getData('application/x-catalog-entry');
+            console.log('entry: %j', entry);
         });
 });

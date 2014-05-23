@@ -20,9 +20,10 @@
         .text(self.options.endpoint);
 
     var updatePanel = function() {
-        if (email) {
+        if (email && userURI) {
             $('#current-email').text(email);
             $('#logout').val('Logout').prop('disabled', false);
+            $('#stock-sources-url').attr('href', userURI + '/sources');
             $('.logged-in').show();
             $('.logged-out').hide();
         }
