@@ -577,40 +577,36 @@
             req.send();
         }
 
-        // temporarily disable DA until the license issue is figured out
-        // (remove the following 'if' clause as soon as the issue is solved)
-        if (!isDeviantArt) {
-            if (siteRules && siteRules.source === "oembed") {
-                // look for oEmbed links and fetch them, and add to the graph for the main element
-                prepareOEmbed();
-            } else {
-                // or let's hope RDFa works
-                prepareRDFa();
-            }
+        if (siteRules && siteRules.source === "oembed") {
+            // look for oEmbed links and fetch them, and add to the graph for the main element
+            prepareOEmbed();
+        } else {
+            // or let's hope RDFa works
+            prepareRDFa();
+        }
 
-            // watch out for document URL change on Flickr and DA
-            // (hackish way to figure out that oEmbed metadata needs a refresh too)
-            if (isFlickr || isDeviantArt) {
-                var timeoutCallback = function() {
-                    if (window.document.body.hasAttribute(gMetadataRelAttr) &&
-                        window.document.body.getAttribute(gMetadataRelAttr) !== window.document.documentURI) {
+        // watch out for document URL change on Flickr and DA
+        // (hackish way to figure out that oEmbed metadata needs a refresh too)
+        if (isFlickr) {
+            var timeoutCallback = function() {
+                if (window.document.body.hasAttribute(gMetadataRelAttr) &&
+                    window.document.body.getAttribute(gMetadataRelAttr) !== window.document.documentURI) {
 
-                        if (isDeviantArt) {
-                            // delete any image previously spiced with metadata
-                            var daDump = document.querySelectorAll('img[' + gSubjectAttr + '="' + window.document.body.getAttribute(gMetadataRelAttr) + '"]');
+                    if (isDeviantArt) {
+                        // delete any image previously spiced with metadata
+                        var daDump = document.querySelectorAll('img[' + gSubjectAttr + '="' + window.document.body.getAttribute(gMetadataRelAttr) + '"]');
 
-                            for (var i = 0; i < daDump.length; ++i) {
-                                var item = daDump[i];
-                                item.parentNode.removeChild(item);
-                            }
+                        for (var i = 0; i < daDump.length; ++i) {
+                            var item = daDump[i];
+                            item.parentNode.removeChild(item);
                         }
-
-                        prepareOEmbed();
                     }
-                };
 
-                window.setInterval(timeoutCallback, 1000);
-            }
+                    prepareOEmbed();
+                }
+            };
+
+            window.setInterval(timeoutCallback, 1000);
         }
     });
 

@@ -46,22 +46,14 @@
             ],
 
             "rules": {
-                "source": "oembed",
-
-                "oembed": {
-                    "type": "json",
-                    "endpoint": "http://backend.deviantart.com/oembed",
-                    "map": {
-                        "license_url": "http://www.w3.org/1999/xhtml/vocab#license"
-                    }
-                },
+                "source": "rdfa",
 
                 "mainElement": [
                     "img.dev-content-normal"
                 ],
                 
                 "rewriteMainSubject": [
-                    "oembed:web_page"
+                    "link:rel=\"canonical\""
                 ]
             }
         }
