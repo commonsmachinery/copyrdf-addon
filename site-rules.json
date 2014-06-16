@@ -8,13 +8,20 @@
             ],
 
             "rules": {
-                "source": "oembed",
+                "source": ["oembed"],
 
                 "oembed": {
                     "type": "json",
-                    "endpoint": "//www.flickr.com/services/oembed",
+                    "endpoint": "https://www.flickr.com/services/oembed",
                     "map": {
-                        "license_url": "http://www.w3.org/1999/xhtml/vocab#license"
+                        "license_url": {
+                            "property": "http://www.w3.org/1999/xhtml/vocab#license",
+                            "type": "uri"
+                        },
+                        "web_page": {
+                            "property": "http://purl.org/dc/elements/1.1/identifier",
+                            "type": "uri"
+                        }
                     }
                 },
 
@@ -26,15 +33,13 @@
                 ],
 
                 "mainOverlayElements": {
-                    "img.main-photo": "div.photo-well-view a.navigate-target",
+                    "img.main-photo": "div.photo-well-view a.navigate-target, div.photo-well-view div.facade-of-protection-neue",
                     "img#liquid-photo": "div#photo-drag-proxy",
                     "span.facade-of-protection + img.loaded": "span.facade-of-protection"
                 },
 
                 "rewriteMainSubject": [
-                    "oembed:web_page",
-                    "link:rel=\"canonical\"",
-                    "rdf:http://ogp.me/ns#url"
+                    "oembed:web_page"
                 ]
             }
         },
@@ -46,17 +51,21 @@
             ],
 
             "rules": {
-                "source": "rdfa",
+                "source": ["oembed", "rdfa"],
+
+                "oembed": {
+                    "type": "json",
+                    "endpoint": "http://backend.deviantart.com/oembed"
+                },
 
                 "mainElement": [
                     "img.dev-content-normal"
                 ],
-                
+
                 "rewriteMainSubject": [
-                    "link:rel=\"canonical\""
+                    "urlregex:(^.*?:[\\/]*)(?:[a-zA-Z0-9][a-zA-Z0-9-]*?\\.)(.*)\\??.*"
                 ]
             }
         }
-
     ]
 }
